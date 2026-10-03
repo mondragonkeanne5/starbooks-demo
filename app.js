@@ -306,3 +306,4 @@ document.querySelectorAll("#mobile-menu a").forEach((link) => link.addEventListe
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && cartDrawer.classList.contains("open")) setCartOpen(false);
 });
+renderCart();
