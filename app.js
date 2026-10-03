@@ -229,7 +229,7 @@ checkoutForm.addEventListener("submit", async (event) => {
       : "",
     items: [...cart.entries()].map(([isbn, item]) => ({ isbn, quantity: item.quantity })),
   };
-  if (!request.turnstile_token) {
+  if (backendConfig.turnstileSiteKey && !request.turnstile_token) {
     checkoutMessage.textContent = "Complete the spam check before sending the receipt.";
     return;
   }
