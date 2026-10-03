@@ -1,5 +1,6 @@
-const cards = [...document.querySelectorAll(".book-card")];
+let cards = [...document.querySelectorAll(".book-card")];
 const filters = [...document.querySelectorAll(".filter-chip")];
+const bookGrid = document.querySelector("#book-grid");
 const searchInput = document.querySelector("#search");
 const emptyState = document.querySelector("#empty-state");
 const bagCount = document.querySelector("#bag-count");
@@ -8,11 +9,100 @@ const cartItems = document.querySelector("#cart-items");
 const cartSubtotal = document.querySelector("#cart-subtotal");
 const cartItemCount = document.querySelector("#cart-item-count");
 const checkoutButton = document.querySelector("#checkout-button");
+const checkoutForm = document.querySelector("#checkout-form");
 const checkoutMessage = document.querySelector("#checkout-message");
 const scrim = document.querySelector("#scrim");
+const backendConfig = window.STARBOOKS_CONFIG || {};
 const cart = new Map();
 let activeCategory = "All";
 let toastTimer;
+let captchaWidgetId;
+
+function renderOrderCaptcha() {
+  if (!backendConfig.turnstileSiteKey || !window.turnstile || captchaWidgetId !== undefined) return;
+  captchaWidgetId = window.turnstile.render("#order-captcha", { sitekey: backendConfig.turnstileSiteKey });
+}
+
+window.addEventListener("load", renderOrderCaptcha);
+
+function createBookCard(book) {
+  const card = document.createElement("article");
+  card.className = "book-card";
+  card.dataset.category = book.category;
+  card.dataset.title = book.title;
+  card.dataset.author = book.author;
+  card.dataset.price = (book.price_cents / 100).toFixed(2);
+  card.dataset.isbn = book.isbn;
+  card.dataset.pick = String(book.staff_pick);
+
+  const art = document.createElement("div");
+  art.className = `book-art cover-${book.cover_tone}`;
+  const cover = document.createElement("img");
+  cover.src = book.cover_url;
+  cover.alt = `Cover of ${book.title} by ${book.author}`;
+  cover.loading = "lazy";
+  art.append(cover);
+
+  if (book.staff_pick) {
+    const pickLabel = document.createElement("span");
+    pickLabel.className = "pick-label";
+    pickLabel.textContent = "STAFF PICK";
+    art.append(pickLabel);
+  }
+
+  const addButton = document.createElement("button");
+  addButton.className = "quick-add";
+  addButton.type = "button";
+  addButton.setAttribute("aria-label", `Add ${book.title} to bag`);
+  addButton.textContent = "+";
+  art.append(addButton);
+
+  card.append(art);
+
+  const info = document.createElement("div");
+  info.className = "book-info";
+  const text = document.createElement("div");
+  const title = document.createElement("h3");
+  title.textContent = book.title;
+  const author = document.createElement("p");
+  author.textContent = book.author;
+  text.append(title, author);
+  const price = document.createElement("span");
+  price.className = "price";
+  price.textContent = `$${(book.price_cents / 100).toFixed(2)}`;
+  info.append(text, price);
+  card.append(info);
+
+  const genre = document.createElement("span");
+  genre.className = "book-genre";
+  genre.textContent = book.genre_label.toUpperCase();
+  card.append(genre);
+  return card;
+}
+
+async function loadBookCatalog() {
+  if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) return;
+  const query = new URLSearchParams({
+    select: "isbn,title,author,price_cents,category,genre_label,cover_url,cover_tone,staff_pick",
+    active: "eq.true",
+    order: "sort_order.asc",
+  });
+  try {
+    const response = await fetch(`${backendConfig.supabaseUrl}/rest/v1/books?${query}`, {
+      headers: { apikey: backendConfig.supabaseAnonKey },
+    });
+    if (!response.ok) throw new Error(`Catalog request failed (${response.status}).`);
+    const books = await response.json();
+    if (!Array.isArray(books) || books.length === 0) return;
+    bookGrid.replaceChildren(...books.map(createBookCard));
+    cards = [...bookGrid.querySelectorAll(".book-card")];
+    applyFilters();
+  } catch (error) {
+    console.warn("Could not load the database catalog; showing the preview catalog instead.", error);
+  }
+}
+
+void loadBookCatalog();
 
 function applyFilters() {
   const query = searchInput.value.trim().toLowerCase();
@@ -39,7 +129,12 @@ function showToast(message) {
 function addToBag(card) {
   const isbn = card.dataset.isbn;
   const item = cart.get(isbn);
-  cart.set(isbn, { title: card.dataset.title, author: card.dataset.author, price: Number(card.dataset.price), quantity: (item?.quantity ?? 0) + 1 });
+  cart.set(isbn, {
+    title: card.dataset.title,
+    author: card.dataset.author,
+    price: Number(card.dataset.price),
+    quantity: (item?.quantity ?? 0) + 1,
+  });
   renderCart();
   showToast(`${card.dataset.title} added to your bag`);
 }
@@ -63,7 +158,8 @@ function renderCart() {
   checkoutButton.hidden = false;
   if (totalItems === 0) {
     cartItems.innerHTML = '<p class="cart-empty">Your next favorite is still out there.</p>';
-    checkoutMessage.textContent = "";
+    checkoutForm.hidden = true;
+    checkoutForm.reset();
     return;
   }
   checkoutMessage.textContent = "";
@@ -96,7 +192,10 @@ filters.forEach((filter) => filter.addEventListener("click", () => {
 }));
 
 searchInput.addEventListener("input", applyFilters);
-document.querySelectorAll(".quick-add").forEach((button) => button.addEventListener("click", () => addToBag(button.closest(".book-card"))));
+bookGrid.addEventListener("click", (event) => {
+  const button = event.target.closest(".quick-add");
+  if (button) addToBag(button.closest(".book-card"));
+});
 document.querySelector("#open-cart").addEventListener("click", () => setCartOpen(true));
 document.querySelector("#close-cart").addEventListener("click", () => setCartOpen(false));
 scrim.addEventListener("click", () => setCartOpen(false));
@@ -107,12 +206,60 @@ cartItems.addEventListener("click", (event) => {
 });
 checkoutButton.addEventListener("click", () => {
   if (cart.size === 0) return;
-  const orderNumber = `DEMO-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-  cart.clear();
-  renderCart();
+  checkoutMessage.textContent = "";
+  checkoutForm.hidden = false;
   checkoutButton.hidden = true;
-  checkoutMessage.textContent = `${orderNumber} complete. This is a demo; no payment, email, or order record was created.`;
-  showToast("Demo checkout complete");
+  renderOrderCaptcha();
+  checkoutForm.querySelector("input[name='customer_email']").focus();
+});
+checkoutForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (cart.size === 0) return;
+  if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
+    checkoutMessage.textContent = "Email checkout is not connected yet. No email was sent.";
+    return;
+  }
+
+  const formData = new FormData(checkoutForm);
+  const request = {
+    customer_email: formData.get("customer_email"),
+    website: formData.get("website"),
+    turnstile_token: window.turnstile && captchaWidgetId !== undefined
+      ? window.turnstile.getResponse(captchaWidgetId)
+      : "",
+    items: [...cart.entries()].map(([isbn, item]) => ({ isbn, quantity: item.quantity })),
+  };
+  if (!request.turnstile_token) {
+    checkoutMessage.textContent = "Complete the spam check before sending the receipt.";
+    return;
+  }
+
+  const submitButton = checkoutForm.querySelector("button[type='submit']");
+  submitButton.disabled = true;
+  checkoutMessage.textContent = "Sending receipt...";
+  try {
+    const response = await fetch(`${backendConfig.supabaseUrl}/functions/v1/send-demo-receipt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: backendConfig.supabaseAnonKey },
+      body: JSON.stringify(request),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "We could not send the receipt. Please try again.");
+    const customerEmail = request.customer_email;
+    cart.clear();
+    checkoutForm.reset();
+    if (captchaWidgetId !== undefined) window.turnstile.reset(captchaWidgetId);
+    renderCart();
+    checkoutButton.hidden = true;
+    checkoutMessage.textContent = `Receipt sent to ${customerEmail}. No payment was collected.`;
+    showToast("Receipt sent");
+  } catch (error) {
+    checkoutMessage.textContent = error.message || "Could not send the receipt. Please try again.";
+    checkoutButton.hidden = false;
+    if (captchaWidgetId !== undefined) window.turnstile.reset(captchaWidgetId);
+  } finally {
+    submitButton.disabled = false;
+  }
 });
 document.querySelector("#menu-toggle").addEventListener("click", (event) => {
   const menu = document.querySelector("#mobile-menu");

@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="backend-config.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -29,9 +31,6 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.2 4.2"/></svg>
           <input id="search" type="search" placeholder="Find a book" aria-label="Search books" />
         </label>
-        <button class="icon-button account-button" type="button" aria-label="Your account" title="Your account">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.4 20c.4-3.6 2.8-5.6 6.6-5.6s6.2 2 6.6 5.6"/></svg>
-        </button>
         <button class="bag-button" id="open-cart" type="button" aria-label="Open shopping bag, 0 items">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.2 8.5h13.6l1 12H4.2l1-12Z"/><path d="M9 9V6.8a3 3 0 0 1 6 0V9"/></svg>
           <span>Bag</span><span class="bag-count" id="bag-count">0</span>
@@ -115,9 +114,15 @@
       <div class="cart-items" id="cart-items"><p class="cart-empty">Your next favorite is still out there.</p></div>
       <div class="cart-footer">
         <div class="subtotal"><span>Subtotal</span><strong id="cart-subtotal">$0.00</strong></div>
-        <button class="checkout-button" id="checkout-button" type="button" disabled>Place demo order <span aria-hidden="true">→</span></button>
+        <button class="checkout-button" id="checkout-button" type="button" disabled>Continue <span aria-hidden="true">→</span></button>
         <p id="checkout-message" class="checkout-message" role="status" aria-live="polite"></p>
-        <p>Demo only. No payment or email is sent.</p>
+        <form class="checkout-form" id="checkout-form" hidden>
+          <label class="customer-field">Email for the receipt<input name="customer_email" type="email" autocomplete="email" maxlength="254" required /></label>
+          <div id="order-captcha" class="order-captcha" aria-label="Spam protection"></div>
+          <label class="form-trap" aria-hidden="true">Leave this field blank<input name="website" tabindex="-1" autocomplete="off" /></label>
+          <button class="checkout-submit" type="submit">Send receipt <span aria-hidden="true">→</span></button>
+        </form>
+        <p>No payment is collected.</p>
       </div>
     </aside>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
