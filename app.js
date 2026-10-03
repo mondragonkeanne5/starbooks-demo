@@ -17,6 +17,13 @@ const cart = new Map();
 let activeCategory = "All";
 let toastTimer;
 
+const formatPrice = (amount) => new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}).format(amount);
+
 function createBookCard(book) {
   const card = document.createElement("article");
   card.className = "book-card";
@@ -61,7 +68,7 @@ function createBookCard(book) {
   text.append(title, author);
   const price = document.createElement("span");
   price.className = "price";
-  price.textContent = `$${(book.price_cents / 100).toFixed(2)}`;
+  price.textContent = formatPrice(book.price_cents / 100);
   info.append(text, price);
   card.append(info);
 
@@ -145,7 +152,7 @@ function renderCart() {
   bagCount.textContent = String(totalItems);
   document.querySelector("#open-cart").setAttribute("aria-label", `Open shopping bag, ${totalItems} items`);
   cartItemCount.textContent = `(${totalItems})`;
-  cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+  cartSubtotal.textContent = formatPrice(subtotal);
   checkoutButton.disabled = totalItems === 0;
   checkoutButton.hidden = false;
   if (totalItems === 0) {
@@ -159,7 +166,7 @@ function renderCart() {
     <article class="cart-line">
       <img src="https://covers.openlibrary.org/b/isbn/${isbn}-S.jpg" alt="" />
       <div><h3>${item.title}</h3><p>${item.author}</p><div class="quantity-controls" aria-label="Quantity for ${item.title}"><button type="button" data-action="decrease" data-isbn="${isbn}" aria-label="Remove one ${item.title}">−</button><span>${item.quantity}</span><button type="button" data-action="increase" data-isbn="${isbn}" aria-label="Add one ${item.title}">+</button></div></div>
-      <span class="cart-line-price">$${(item.price * item.quantity).toFixed(2)}</span>
+      <span class="cart-line-price">${formatPrice(item.price * item.quantity)}</span>
     </article>`).join("");
 }
 

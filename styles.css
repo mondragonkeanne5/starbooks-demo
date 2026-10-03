@@ -204,6 +204,22 @@ body.cart-open { overflow: hidden; }
   .site-footer small { width: 100%; margin-left: 0; }
   .cart-drawer { padding: 22px; }
 }
+@media (max-width: 420px) {
+  .site-header { padding-inline: 12px; gap: 6px; }
+  .brand-logo { width: 34px; height: 34px; }
+  .brand-name { font-size: 18px; }
+  .header-actions { gap: 6px; }
+  .search-box:focus-within { width: clamp(64px, calc(100vw - 275px), 120px); }
+  .search-box:focus-within input { width: calc(100% - 28px); opacity: 1; }
+  .search-box input { transition: none; }
+  .bag-button > span:not(.bag-count) { display: none; }
+}
+@media (max-width: 360px) {
+  .site-header { padding-inline: 10px; gap: 4px; }
+  .brand-logo { width: 32px; height: 32px; }
+  .brand-name { font-size: 16px; }
+  .search-box:focus-within { width: clamp(60px, calc(100vw - 260px), 100px); }
+}
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
