@@ -16,6 +16,18 @@ const backendConfig = window.STARBOOKS_CONFIG || {};
 const cart = new Map();
 let activeCategory = "All";
 let toastTimer;
+function loadLastOrderSubtotalCents() {
+  try {
+    const stored = localStorage.getItem("starbookLastOrderSubtotalCents");
+    if (stored === null) return null;
+    const subtotalCents = Number(stored);
+    return Number.isSafeInteger(subtotalCents) && subtotalCents >= 0 ? subtotalCents : null;
+  } catch (error) {
+    console.warn("Could not load the last order subtotal from this browser.", error);
+    return null;
+  }
+}
+let lastOrderSubtotalCents = loadLastOrderSubtotalCents();
 
 const formatPrice = (amount) => new Intl.NumberFormat("en-PH", {
   style: "currency",
@@ -152,7 +164,9 @@ function renderCart() {
   bagCount.textContent = String(totalItems);
   document.querySelector("#open-cart").setAttribute("aria-label", `Open shopping bag, ${totalItems} items`);
   cartItemCount.textContent = `(${totalItems})`;
-  cartSubtotal.textContent = formatPrice(subtotal);
+  const isEmptyWithPreviousOrder = totalItems === 0 && lastOrderSubtotalCents !== null;
+  document.querySelector("#cart-subtotal-label").textContent = isEmptyWithPreviousOrder ? "Last order total" : "Subtotal";
+  cartSubtotal.textContent = formatPrice(isEmptyWithPreviousOrder ? lastOrderSubtotalCents / 100 : subtotal);
   checkoutButton.disabled = totalItems === 0;
   checkoutButton.hidden = false;
   if (totalItems === 0) {
@@ -224,6 +238,10 @@ checkoutForm.addEventListener("submit", async (event) => {
     website: formData.get("website"),
     items: [...cart.entries()].map(([isbn, item]) => ({ isbn, quantity: item.quantity })),
   };
+  const checkoutSubtotalCents = [...cart.values()].reduce(
+    (total, item) => total + Math.round(item.price * 100) * item.quantity,
+    0,
+  );
 
   const submitButton = checkoutForm.querySelector("button[type='submit']");
   submitButton.disabled = true;
@@ -238,6 +256,14 @@ checkoutForm.addEventListener("submit", async (event) => {
     if (!response.ok) throw new Error(result.error || "We could not send the receipt. Please try again.");
     const customerEmail = request.customer_email;
     const reference = result.reference || "CONFIRMED";
+    lastOrderSubtotalCents = Number.isSafeInteger(result.subtotal_cents) && result.subtotal_cents >= 0
+      ? result.subtotal_cents
+      : checkoutSubtotalCents;
+    try {
+      localStorage.setItem("starbookLastOrderSubtotalCents", String(lastOrderSubtotalCents));
+    } catch (error) {
+      console.warn("Could not persist the last order subtotal in this browser.", error);
+    }
     cart.clear();
     checkoutForm.reset();
     renderCart();
