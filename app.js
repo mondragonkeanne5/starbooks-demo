@@ -16,14 +16,6 @@ const backendConfig = window.STARBOOKS_CONFIG || {};
 const cart = new Map();
 let activeCategory = "All";
 let toastTimer;
-let captchaWidgetId;
-
-function renderOrderCaptcha() {
-  if (!backendConfig.turnstileSiteKey || !window.turnstile || captchaWidgetId !== undefined) return;
-  captchaWidgetId = window.turnstile.render("#order-captcha", { sitekey: backendConfig.turnstileSiteKey });
-}
-
-window.addEventListener("load", renderOrderCaptcha);
 
 function createBookCard(book) {
   const card = document.createElement("article");
@@ -123,7 +115,7 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("visible");
   window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 1900);
+  toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3200);
 }
 
 function addToBag(card) {
@@ -209,7 +201,6 @@ checkoutButton.addEventListener("click", () => {
   checkoutMessage.textContent = "";
   checkoutForm.hidden = false;
   checkoutButton.hidden = true;
-  renderOrderCaptcha();
   checkoutForm.querySelector("input[name='customer_email']").focus();
 });
 checkoutForm.addEventListener("submit", async (event) => {
@@ -224,15 +215,8 @@ checkoutForm.addEventListener("submit", async (event) => {
   const request = {
     customer_email: formData.get("customer_email"),
     website: formData.get("website"),
-    turnstile_token: window.turnstile && captchaWidgetId !== undefined
-      ? window.turnstile.getResponse(captchaWidgetId)
-      : "",
     items: [...cart.entries()].map(([isbn, item]) => ({ isbn, quantity: item.quantity })),
   };
-  if (backendConfig.turnstileSiteKey && !request.turnstile_token) {
-    checkoutMessage.textContent = "Complete the spam check before sending the receipt.";
-    return;
-  }
 
   const submitButton = checkoutForm.querySelector("button[type='submit']");
   submitButton.disabled = true;
@@ -246,17 +230,33 @@ checkoutForm.addEventListener("submit", async (event) => {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "We could not send the receipt. Please try again.");
     const customerEmail = request.customer_email;
+    const reference = result.reference || "CONFIRMED";
     cart.clear();
     checkoutForm.reset();
-    if (captchaWidgetId !== undefined) window.turnstile.reset(captchaWidgetId);
     renderCart();
+    checkoutForm.hidden = true;
     checkoutButton.hidden = true;
-    checkoutMessage.textContent = `Receipt sent to ${customerEmail}. No payment was collected.`;
-    showToast("Receipt sent");
+    checkoutMessage.textContent = "";
+
+    cartItems.innerHTML = `
+      <div class="order-success-card">
+        <div class="order-success-icon">✓</div>
+        <h3>Receipt Sent!</h3>
+        <div class="order-success-ref">Order Reference: ${reference}</div>
+        <p class="order-success-desc">A detailed receipt has been sent to <strong>${customerEmail}</strong>.</p>
+        <button class="order-success-btn" id="close-after-order" type="button">Back to Books</button>
+      </div>
+    `;
+
+    document.querySelector("#close-after-order")?.addEventListener("click", () => {
+      setCartOpen(false);
+      renderCart();
+    });
+
+    showToast(`✓ Receipt sent to ${customerEmail}`);
   } catch (error) {
     checkoutMessage.textContent = error.message || "Could not send the receipt. Please try again.";
     checkoutButton.hidden = false;
-    if (captchaWidgetId !== undefined) window.turnstile.reset(captchaWidgetId);
   } finally {
     submitButton.disabled = false;
   }

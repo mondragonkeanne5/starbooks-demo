@@ -9,10 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=3" />
     <script src="backend-config.js"></script>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-    <script src="app.js" defer></script>
+    <script src="app.js?v=3" defer></script>
   </head>
   <body>
     <div class="announcement">A good story pairs well with anything. <a href="#books">Find yours <span aria-hidden="true">→</span></a></div>
@@ -118,11 +117,9 @@
         <p id="checkout-message" class="checkout-message" role="status" aria-live="polite"></p>
         <form class="checkout-form" id="checkout-form" hidden>
           <label class="customer-field">Email for the receipt<input name="customer_email" type="email" autocomplete="email" maxlength="254" required /></label>
-          <div id="order-captcha" class="order-captcha" aria-label="Spam protection"></div>
           <label class="form-trap" aria-hidden="true">Leave this field blank<input name="website" tabindex="-1" autocomplete="off" /></label>
           <button class="checkout-submit" type="submit">Send receipt <span aria-hidden="true">→</span></button>
         </form>
-        <p>No payment is collected.</p>
       </div>
     </aside>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

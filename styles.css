@@ -137,8 +137,15 @@ h1 em,h2 em { color: #6d8565; font-weight: 500; }
 .form-trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .checkout-submit { width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: space-between; padding: 0 15px; border: 0; background: #d5e6a8; color: var(--forest); font-size: 11px; font-weight: 700; cursor: pointer; }
 .checkout-submit:disabled { opacity: .65; cursor: wait; }
-.toast { position: fixed; z-index: 20; right: 22px; bottom: 22px; padding: 12px 16px; background: var(--forest-dark); color: white; font-size: 11px; opacity: 0; pointer-events: none; transform: translateY(8px); transition: .2s; }
-.toast.visible { opacity: 1; transform: translateY(0); }
+.toast { position: fixed; z-index: 99999; right: 24px; top: 24px; bottom: auto; max-width: 380px; padding: 14px 20px; background: var(--forest-dark); color: white; font-size: 12px; font-weight: 600; border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,0.25); border-left: 4px solid #d5e6a8; opacity: 0; pointer-events: none; transform: translateY(-12px); transition: all .25s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center; gap: 10px; }
+.toast.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.order-success-card { text-align: center; padding: 36px 16px; display: flex; flex-direction: column; align-items: center; }
+.order-success-icon { width: 54px; height: 54px; background: #edf5e8; color: var(--forest-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 16px; font-weight: 700; box-shadow: 0 2px 8px rgba(18,63,43,.12); }
+.order-success-card h3 { font-family: var(--font-display); font-size: 24px; color: var(--forest-dark); margin: 0 0 8px; }
+.order-success-ref { display: inline-block; background: #f0f4ec; color: var(--forest); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-bottom: 14px; letter-spacing: .5px; }
+.order-success-desc { color: #55665b; font-size: 13px; line-height: 1.5; margin: 0 0 22px; max-width: 280px; }
+.order-success-btn { width: 100%; max-width: 220px; min-height: 42px; background: var(--forest-dark); color: white; border: 0; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; transition: background .2s; }
+.order-success-btn:hover { background: var(--forest); }
 body.cart-open { overflow: hidden; }
 @media (max-width: 900px) {
   .site-header { gap: 24px; padding-inline: 4vw; }
