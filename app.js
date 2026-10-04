@@ -275,11 +275,17 @@ checkoutForm.addEventListener("submit", async (event) => {
       <div class="order-success-card">
         <div class="order-success-icon">✓</div>
         <h3>Receipt Sent!</h3>
-        <div class="order-success-ref">Order Reference: ${reference}</div>
-        <p class="order-success-desc">A detailed receipt has been sent to <strong>${customerEmail}</strong>.</p>
+        <p class="order-success-desc">A detailed receipt has been sent to <strong class="order-success-email"></strong>.</p>
+        <div class="order-success-total">
+          <span>Total on this receipt</span>
+          <strong>${formatPrice(lastOrderSubtotalCents / 100)}</strong>
+        </div>
+        <div class="order-success-ref"></div>
         <button class="order-success-btn" id="close-after-order" type="button">Back to Books</button>
       </div>
     `;
+    cartItems.querySelector(".order-success-email").textContent = customerEmail;
+    cartItems.querySelector(".order-success-ref").textContent = `Order Reference: ${reference}`;
 
     document.querySelector("#close-after-order")?.addEventListener("click", () => {
       setCartOpen(false);

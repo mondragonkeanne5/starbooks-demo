@@ -144,6 +144,9 @@ h1 em,h2 em { color: #6d8565; font-weight: 500; }
 .order-success-card h3 { font-family: var(--font-display); font-size: 24px; color: var(--forest-dark); margin: 0 0 8px; }
 .order-success-ref { display: inline-block; background: #f0f4ec; color: var(--forest); padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-bottom: 14px; letter-spacing: .5px; }
 .order-success-desc { color: #55665b; font-size: 13px; line-height: 1.5; margin: 0 0 22px; max-width: 280px; }
+.order-success-total { width: 100%; max-width: 300px; display: grid; gap: 5px; margin: 0 0 16px; padding: 16px; border: 1px solid #dce7d4; border-radius: 10px; background: linear-gradient(135deg, #f3f7ed, #fbfaf6); color: #637064; font-size: 11px; text-align: left; }
+.order-success-total strong { color: var(--forest-dark); font-family: var(--serif); font-size: 30px; font-weight: 600; letter-spacing: -.03em; }
+.order-success-ref { margin-bottom: 20px; }
 .order-success-btn { width: 100%; max-width: 220px; min-height: 42px; background: var(--forest-dark); color: white; border: 0; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; transition: background .2s; }
 .order-success-btn:hover { background: var(--forest); }
 body.cart-open { overflow: hidden; }
