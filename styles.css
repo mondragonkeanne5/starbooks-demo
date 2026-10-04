@@ -147,6 +147,7 @@ h1 em,h2 em { color: #6d8565; font-weight: 500; }
 .order-success-total { width: 100%; max-width: 300px; display: grid; gap: 5px; margin: 0 0 16px; padding: 16px; border: 1px solid #dce7d4; border-radius: 10px; background: linear-gradient(135deg, #f3f7ed, #fbfaf6); color: #637064; font-size: 11px; text-align: left; }
 .order-success-total strong { color: var(--forest-dark); font-family: var(--serif); font-size: 30px; font-weight: 600; letter-spacing: -.03em; }
 .order-success-ref { margin-bottom: 20px; }
+.cart-drawer.order-complete .cart-footer { display: none; }
 .order-success-btn { width: 100%; max-width: 220px; min-height: 42px; background: var(--forest-dark); color: white; border: 0; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; transition: background .2s; }
 .order-success-btn:hover { background: var(--forest); }
 body.cart-open { overflow: hidden; }

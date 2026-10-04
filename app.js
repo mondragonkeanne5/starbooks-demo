@@ -159,6 +159,7 @@ function changeQuantity(isbn, amount) {
 }
 
 function renderCart() {
+  cartDrawer.classList.remove("order-complete");
   const totalItems = [...cart.values()].reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = [...cart.values()].reduce((sum, item) => sum + item.price * item.quantity, 0);
   bagCount.textContent = String(totalItems);
@@ -185,6 +186,7 @@ function renderCart() {
 }
 
 function setCartOpen(isOpen) {
+  if (!isOpen && cartDrawer.classList.contains("order-complete")) renderCart();
   cartDrawer.classList.toggle("open", isOpen);
   cartDrawer.setAttribute("aria-hidden", String(!isOpen));
   cartDrawer.inert = !isOpen;
@@ -286,10 +288,10 @@ checkoutForm.addEventListener("submit", async (event) => {
     `;
     cartItems.querySelector(".order-success-email").textContent = customerEmail;
     cartItems.querySelector(".order-success-ref").textContent = `Order Reference: ${reference}`;
+    cartDrawer.classList.add("order-complete");
 
     document.querySelector("#close-after-order")?.addEventListener("click", () => {
       setCartOpen(false);
-      renderCart();
     });
 
     showToast(`✓ Receipt sent to ${customerEmail}`);
