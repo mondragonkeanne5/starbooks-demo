@@ -1,4 +1,4 @@
-let cards = [...document.querySelectorAll(".book-card")];
+let cards = [];
 const filters = [...document.querySelectorAll(".filter-chip")];
 const bookGrid = document.querySelector("#book-grid");
 const searchInput = document.querySelector("#search");
@@ -16,6 +16,7 @@ const backendConfig = window.STARBOOKS_CONFIG || {};
 const cart = new Map();
 let activeCategory = "All";
 let toastTimer;
+let catalogLoaded = false;
 function loadLastOrderSubtotalCents() {
   try {
     const stored = localStorage.getItem("starbookLastOrderSubtotalCents");
@@ -92,7 +93,11 @@ function createBookCard(book) {
 }
 
 async function loadBookCatalog() {
-  if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) return;
+  if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
+    emptyState.textContent = "The book catalog is unavailable right now.";
+    bookGrid.setAttribute("aria-busy", "false");
+    return;
+  }
   const query = new URLSearchParams({
     select: "isbn,title,author,price_cents,category,genre_label,cover_url,cover_tone,staff_pick",
     active: "eq.true",
@@ -104,18 +109,31 @@ async function loadBookCatalog() {
     });
     if (!response.ok) throw new Error(`Catalog request failed (${response.status}).`);
     const books = await response.json();
-    if (!Array.isArray(books) || books.length === 0) return;
+    if (!Array.isArray(books)) throw new Error("Catalog response was invalid.");
     bookGrid.replaceChildren(...books.map(createBookCard));
     cards = [...bookGrid.querySelectorAll(".book-card")];
+    catalogLoaded = true;
+    if (cards.length === 0) {
+      emptyState.textContent = "No books are available right now.";
+      emptyState.hidden = false;
+      return;
+    }
     applyFilters();
   } catch (error) {
-    console.warn("Could not load the database catalog; showing the preview catalog instead.", error);
+    bookGrid.replaceChildren();
+    cards = [];
+    emptyState.textContent = "The book catalog is unavailable right now.";
+    emptyState.hidden = false;
+    console.warn("Could not load the database catalog.", error);
+  } finally {
+    bookGrid.setAttribute("aria-busy", "false");
   }
 }
 
 void loadBookCatalog();
 
 function applyFilters() {
+  if (!catalogLoaded) return;
   const query = searchInput.value.trim().toLowerCase();
   let visibleCount = 0;
   cards.forEach((card) => {
