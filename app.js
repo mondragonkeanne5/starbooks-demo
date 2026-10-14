@@ -13,7 +13,20 @@ const checkoutForm = document.querySelector("#checkout-form");
 const checkoutMessage = document.querySelector("#checkout-message");
 const scrim = document.querySelector("#scrim");
 const backendConfig = window.STARBOOKS_CONFIG || {};
-const cart = new Map();
+const cartStorageKey = "starbooksCart";
+function loadCart() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(cartStorageKey) || "[]");
+    if (!Array.isArray(saved)) return new Map();
+    return new Map(saved.filter(([isbn, item]) => typeof isbn === "string"
+      && item && typeof item.title === "string" && typeof item.author === "string"
+      && Number.isFinite(item.price) && Number.isInteger(item.quantity) && item.quantity > 0));
+  } catch (error) {
+    console.warn("Could not restore the shopping bag for this session.", error);
+    return new Map();
+  }
+}
+const cart = loadCart();
 let activeCategory = "All";
 let toastTimer;
 let catalogLoaded = cards.length > 0;
@@ -93,6 +106,7 @@ function createBookCard(book) {
 }
 
 async function loadBookCatalog() {
+  if (!bookGrid) return;
   if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
     if (cards.length === 0) {
       emptyState.textContent = "The book catalog is unavailable right now.";
@@ -136,7 +150,7 @@ async function loadBookCatalog() {
 void loadBookCatalog();
 
 function applyFilters() {
-  if (!catalogLoaded) return;
+  if (!bookGrid || !searchInput || !emptyState || !catalogLoaded) return;
   const query = searchInput.value.trim().toLowerCase();
   let visibleCount = 0;
   cards.forEach((card) => {
@@ -180,6 +194,11 @@ function changeQuantity(isbn, amount) {
 }
 
 function renderCart() {
+  try {
+    sessionStorage.setItem(cartStorageKey, JSON.stringify([...cart.entries()]));
+  } catch (error) {
+    console.warn("Could not save the shopping bag for this session.", error);
+  }
   cartDrawer.classList.remove("order-complete");
   const totalItems = [...cart.values()].reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = [...cart.values()].reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -227,8 +246,8 @@ filters.forEach((filter) => filter.addEventListener("click", () => {
   applyFilters();
 }));
 
-searchInput.addEventListener("input", applyFilters);
-bookGrid.addEventListener("click", (event) => {
+searchInput?.addEventListener("input", applyFilters);
+bookGrid?.addEventListener("click", (event) => {
   const button = event.target.closest(".quick-add");
   if (button) addToBag(button.closest(".book-card"));
 });
@@ -312,7 +331,8 @@ checkoutForm.addEventListener("submit", async (event) => {
     cartDrawer.classList.add("order-complete");
 
     document.querySelector("#close-after-order")?.addEventListener("click", () => {
-      setCartOpen(false);
+      if (bookGrid) setCartOpen(false);
+      else window.location.href = "books.html#books";
     });
 
     showToast(`✓ Receipt sent to ${customerEmail}`);
@@ -323,7 +343,7 @@ checkoutForm.addEventListener("submit", async (event) => {
     submitButton.disabled = false;
   }
 });
-document.querySelector("#menu-toggle").addEventListener("click", (event) => {
+document.querySelector("#menu-toggle")?.addEventListener("click", (event) => {
   const menu = document.querySelector("#mobile-menu");
   const isOpen = menu.classList.toggle("open");
   event.currentTarget.setAttribute("aria-expanded", String(isOpen));
