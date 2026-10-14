@@ -68,13 +68,6 @@ function createBookCard(book) {
   cover.loading = "lazy";
   art.append(cover);
 
-  if (book.staff_pick) {
-    const pickLabel = document.createElement("span");
-    pickLabel.className = "pick-label";
-    pickLabel.textContent = "STAFF PICK";
-    art.append(pickLabel);
-  }
-
   const addButton = document.createElement("button");
   addButton.className = "quick-add";
   addButton.type = "button";

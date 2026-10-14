@@ -80,7 +80,7 @@ h1 em,h2 em { color: #6d8565; font-weight: 500; }
 .cover-blue { background: #dce6e0; }.cover-coral { background: #efe2d8; }.cover-yellow { background: #e8e7d6; }.cover-teal { background: #d9e6e4; }
 .book-art img { width: 158px; height: 226px; object-fit: cover; box-shadow: 5px 9px 18px rgba(31,48,40,.2); transition: transform .25s, box-shadow .25s; }
 .book-card:hover .book-art img { transform: translateY(-4px) rotate(-1deg); box-shadow: 7px 13px 21px rgba(31,48,40,.24); }
-.pick-label { position: absolute; top: 12px; left: 12px; padding: 6px 8px; background: var(--leaf); color: var(--forest); font-size: 8px; font-weight: 700; letter-spacing: .1em; }
+.pick-label { display: none; }
 .quick-add { width: 34px; height: 34px; position: absolute; right: 12px; bottom: 12px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--forest); color: white; font-size: 22px; font-weight: 300; line-height: 1; cursor: pointer; transition: transform .2s, background .2s; }
 .quick-add:hover { background: #2a6647; transform: rotate(90deg); }
 .book-info { display: flex; align-items: start; justify-content: space-between; gap: 8px; margin-top: 13px; }
