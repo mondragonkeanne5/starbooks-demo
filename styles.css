@@ -280,6 +280,35 @@ h1 em, h2 em { color: #c46445; }
 .about-icon { color: #c46445; }
 .site-footer { background: #0b2e20; }
 .bag-button:focus-visible, .icon-button:focus-visible, .quick-add:focus-visible, .filter-chip:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #e7bd62; outline-offset: 3px; }
+.hero-copy > * { animation: soft-rise .65s both; }
+.hero-copy > :nth-child(2) { animation-delay: .08s; }
+.hero-copy > :nth-child(3) { animation-delay: .16s; }
+.hero-copy > :nth-child(4) { animation-delay: .24s; }
+.hero-copy > :nth-child(5) { animation-delay: .32s; }
+.hero-image { animation: image-arrive .9s cubic-bezier(.2,.7,.2,1) both; }
+.hero-sticker { animation: sticker-float 5s ease-in-out 1s infinite; }
+.highlight-item { animation: soft-rise .55s both; }
+.highlight-item:nth-child(2) { animation-delay: .1s; }
+.highlight-item:nth-child(3) { animation-delay: .2s; }
+.book-card:nth-child(4n + 1) { animation-delay: 0ms; }
+.book-card:nth-child(4n + 2) { animation-delay: 70ms; }
+.book-card:nth-child(4n + 3) { animation-delay: 140ms; }
+.book-card:nth-child(4n + 4) { animation-delay: 210ms; }
+.staff-banner > * { animation: soft-rise .65s both; }
+.staff-banner > :nth-child(2) { animation-delay: .1s; }
+.staff-banner > :nth-child(3) { animation-delay: .2s; }
+@keyframes soft-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes image-arrive {
+  from { opacity: .65; transform: scale(1.035); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes sticker-float {
+  0%, 100% { transform: translateY(0) rotate(8deg); }
+  50% { transform: translateY(-7px) rotate(5deg); }
+}
 @media (max-width: 900px) {
   .site-header { padding-inline: 4vw; }
   .main-nav { gap: 18px; }
