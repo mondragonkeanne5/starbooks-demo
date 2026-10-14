@@ -1,4 +1,4 @@
-let cards = [];
+let cards = [...document.querySelectorAll(".book-card")];
 const filters = [...document.querySelectorAll(".filter-chip")];
 const bookGrid = document.querySelector("#book-grid");
 const searchInput = document.querySelector("#search");
@@ -16,7 +16,7 @@ const backendConfig = window.STARBOOKS_CONFIG || {};
 const cart = new Map();
 let activeCategory = "All";
 let toastTimer;
-let catalogLoaded = false;
+let catalogLoaded = cards.length > 0;
 function loadLastOrderSubtotalCents() {
   try {
     const stored = localStorage.getItem("starbookLastOrderSubtotalCents");
@@ -94,7 +94,10 @@ function createBookCard(book) {
 
 async function loadBookCatalog() {
   if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
-    emptyState.textContent = "The book catalog is unavailable right now.";
+    if (cards.length === 0) {
+      emptyState.textContent = "The book catalog is unavailable right now.";
+      emptyState.hidden = false;
+    }
     bookGrid.setAttribute("aria-busy", "false");
     return;
   }
@@ -120,11 +123,11 @@ async function loadBookCatalog() {
     }
     applyFilters();
   } catch (error) {
-    bookGrid.replaceChildren();
-    cards = [];
-    emptyState.textContent = "The book catalog is unavailable right now.";
-    emptyState.hidden = false;
-    console.warn("Could not load the database catalog.", error);
+    if (cards.length === 0) {
+      emptyState.textContent = "The book catalog is unavailable right now.";
+      emptyState.hidden = false;
+    }
+    console.warn("Could not load the database catalog; keeping the saved catalog visible.", error);
   } finally {
     bookGrid.setAttribute("aria-busy", "false");
   }
