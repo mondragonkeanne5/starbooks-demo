@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=11" />
     <script src="backend-config.js"></script>
-    <script src="app.js?v=11" defer></script>
+    <script src="app.js?v=12" defer></script>
   </head>
   <body>
     <div class="announcement">A good story pairs well with anything. <a href="#books">Find yours <span aria-hidden="true">→</span></a></div>
@@ -23,8 +23,6 @@
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#books">Books</a>
-        <a href="index.html#staff-picks">Staff picks</a>
-        <a href="index.html#about">Our bookhouse</a>
       </nav>
       <div class="header-actions">
         <label class="search-box">
@@ -40,7 +38,7 @@
         </button>
       </div>
       <div class="mobile-menu" id="mobile-menu">
-        <a href="#books">Books</a><a href="index.html#staff-picks">Staff picks</a><a href="index.html#about">Our bookhouse</a>
+        <a href="#books">Books</a>
       </div>
     </header>
 
@@ -55,7 +53,6 @@
           <button class="filter-chip" data-category="Fiction" type="button" aria-pressed="false">Fiction</button>
           <button class="filter-chip" data-category="Nonfiction" type="button" aria-pressed="false">Nonfiction</button>
           <button class="filter-chip" data-category="Fantasy" type="button" aria-pressed="false">Fantasy</button>
-          <button class="filter-chip" data-category="Staff picks" type="button" aria-pressed="false">Staff picks <span class="sparkle" aria-hidden="true">✳</span></button>
         </div>
         <div class="book-grid" id="book-grid" aria-live="polite" aria-busy="true">
           <article class="book-card" data-category="Fiction" data-title="The Midnight Library" data-author="Matt Haig" data-price="1126.75" data-isbn="9780525559474" data-pick="true"><div class="book-art cover-blue"><img src="https://covers.openlibrary.org/b/isbn/9780525559474-L.jpg" alt="Cover of The Midnight Library by Matt Haig" loading="lazy" /><span class="pick-label">STAFF PICK</span><button class="quick-add" type="button" aria-label="Add The Midnight Library to bag">+</button></div><div class="book-info"><div><h3>The Midnight Library</h3><p>Matt Haig</p></div><span class="price">&#8369;1,126.75</span></div><span class="book-genre">FICTION</span></article>

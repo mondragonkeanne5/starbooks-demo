@@ -154,8 +154,7 @@ function applyFilters() {
   const query = searchInput.value.trim().toLowerCase();
   let visibleCount = 0;
   cards.forEach((card) => {
-    const matchesCategory = activeCategory === "All"
-      || (activeCategory === "Staff picks" ? card.dataset.pick === "true" : card.dataset.category === activeCategory);
+    const matchesCategory = activeCategory === "All" || card.dataset.category === activeCategory;
     const matchesSearch = `${card.dataset.title} ${card.dataset.author}`.toLowerCase().includes(query);
     const isVisible = matchesCategory && matchesSearch;
     card.hidden = !isVisible;
