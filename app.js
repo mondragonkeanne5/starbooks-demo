@@ -255,7 +255,10 @@ checkoutForm.addEventListener("submit", async (event) => {
 
     showToast(`✓ Receipt sent to ${customerEmail}`);
   } catch (error) {
-    checkoutMessage.textContent = error.message || "Could not send the receipt. Please try again.";
+    const isNetworkError = error instanceof TypeError || /failed to fetch|load failed|networkerror/i.test(error.message || "");
+    checkoutMessage.textContent = isNetworkError
+      ? "Messenger could not connect to checkout. Open hotspotandco.com in Safari or Chrome, then try again. Check your inbox first in case the receipt was sent."
+      : error.message || "Could not send the receipt. Please try again.";
     checkoutButton.hidden = false;
   } finally {
     submitButton.disabled = false;
