@@ -281,9 +281,10 @@ checkoutForm.addEventListener("submit", async (event) => {
   submitButton.disabled = true;
   checkoutMessage.textContent = "Sending receipt...";
   try {
-    const response = await fetch(`${backendConfig.supabaseUrl}/functions/v1/send-demo-receipt`, {
+    const checkoutUrl = new URL(`${backendConfig.supabaseUrl}/functions/v1/send-demo-receipt`);
+    const response = await fetch(checkoutUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: backendConfig.supabaseAnonKey },
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
       body: JSON.stringify(request),
     });
     const result = await response.json();
