@@ -101,7 +101,11 @@ Deno.serve(async (request) => {
   const subtotalCents = items.reduce((total, item) => total + item.unit_price_cents * item.quantity, 0);
   const reference = `SB-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   const rows = items.map((item) =>
-    `<tr><td>${escapeHtml(item.title)} by ${escapeHtml(item.author)}</td><td>${item.quantity}</td><td>$${(item.unit_price_cents * item.quantity / 100).toFixed(2)}</td></tr>`
+    `<tr>
+      <td style="padding:16px;border-bottom:1px solid #e4e9e1;color:#243b30;font-size:14px;line-height:1.5">${escapeHtml(item.title)}<br><span style="color:#68776d;font-size:13px">by ${escapeHtml(item.author)}</span></td>
+      <td align="center" style="padding:16px;border-bottom:1px solid #e4e9e1;color:#243b30;font-size:14px">${item.quantity}</td>
+      <td align="right" style="padding:16px;border-bottom:1px solid #e4e9e1;color:#243b30;font-size:14px;font-weight:600">$${(item.unit_price_cents * item.quantity / 100).toFixed(2)}</td>
+    </tr>`
   ).join("");
 
   let emailResponse: Response;
@@ -114,36 +118,42 @@ Deno.serve(async (request) => {
         from: `Starbooks Bookhouse <${fromEmail}>`,
         to: [email],
         subject: `Starbooks receipt ${reference}`,
-        html: `<div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f3028;max-width:600px;margin:0 auto;padding:28px 24px;border:1px solid #e2e8df;border-radius:12px;background:#fcfdfa">
-  <div style="border-bottom:2px solid #123f2b;padding-bottom:18px;margin-bottom:20px;text-align:center">
-    <h1 style="color:#123f2b;margin:0 0 4px;font-size:26px;letter-spacing:-0.5px">Starbooks Bookhouse</h1>
-    <p style="color:#57685c;margin:0;font-size:14px;font-weight:500">Official Order Receipt</p>
-  </div>
-  <p style="font-size:15px;line-height:1.5;margin:0 0 16px">Thank you for your order! Your receipt reference number is <strong style="color:#123f2b;font-size:16px;background:#edf5e8;padding:2px 8px;border-radius:4px">${reference}</strong>.</p>
-  <table style="width:100%;border-collapse:collapse;margin:20px 0" cellpadding="10">
-    <thead>
-      <tr style="background:#edf3e5;border-bottom:2px solid #d5e4cc">
-        <th align="left" style="font-size:12px;text-transform:uppercase;color:#123f2b;letter-spacing:0.5px">Book</th>
-        <th align="center" style="font-size:12px;text-transform:uppercase;color:#123f2b;letter-spacing:0.5px">Qty</th>
-        <th align="right" style="font-size:12px;text-transform:uppercase;color:#123f2b;letter-spacing:0.5px">Total</th>
-      </tr>
-    </thead>
-    <tbody style="font-size:14px">
-      ${rows}
-    </tbody>
-  </table>
-  <div style="text-align:right;padding-top:14px;border-top:1px solid #e0e5dc;margin-bottom:24px">
-    <span style="font-size:15px;color:#5a685f;margin-right:12px">Total Amount:</span>
-    <strong style="font-size:22px;color:#123f2b">$${(subtotalCents / 100).toFixed(2)}</strong>
-  </div>
-  <div style="background:#f1f6ed;border:1px solid #d9e6d3;padding:16px;border-radius:8px;font-size:13px;color:#3f5446;text-align:center;line-height:1.5">
-    <p style="margin:0 0 12px">Continue browsing or come back to your next favorite read:</p>
-    <a href="${safeStorefrontUrl}" style="display:inline-block;background:#123f2b;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600">Visit Starbooks</a>
-  </div>
-  <div style="background:#f1f6ed;border:1px solid #d9e6d3;padding:14px;border-radius:8px;font-size:13px;color:#3f5446;text-align:center;line-height:1.4;margin-top:16px">
-    If you have any questions about this receipt, reply directly to this email at <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:600;text-decoration:underline">${fromEmail}</a>.
-  </div>
-</div>`,
+        html: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f2f1eb" style="width:100%;background-color:#f2f1eb;font-family:Arial,Helvetica,sans-serif;color:#243b30">
+  <tr><td align="center" style="padding:28px 12px">
+    <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dce4da">
+      <tr><td align="center" bgcolor="#123f2b" style="background-color:#123f2b;padding:30px 20px 26px;color:#ffffff">
+        <p style="margin:0 0 9px;color:#e3c985;font-size:11px;line-height:1.3;font-weight:bold;text-transform:uppercase;letter-spacing:2px">A note from your bookseller</p>
+        <h1 style="margin:0;color:#ffffff;font-size:28px;line-height:1.25;font-weight:bold">Starbooks Bookhouse</h1>
+        <p style="margin:7px 0 0;color:#e8eee8;font-size:14px;line-height:1.4">Your order receipt</p>
+      </td></tr>
+      <tr><td style="padding:26px 28px 12px">
+        <p style="margin:0;color:#344a3d;font-size:15px;line-height:1.7">Thank you for your order. Keep this receipt reference for your records:</p>
+        <p style="margin:10px 0 0;color:#123f2b;font-size:16px;line-height:1.5;font-weight:bold">${reference}</p>
+      </td></tr>
+      <tr><td style="padding:12px 28px 4px">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse">
+          <tr bgcolor="#edf3e9" style="background-color:#edf3e9">
+            <th align="left" style="padding:12px 16px;color:#365342;font-size:11px;line-height:1.3;text-transform:uppercase;letter-spacing:1px">Book</th>
+            <th align="center" style="padding:12px 8px;color:#365342;font-size:11px;line-height:1.3;text-transform:uppercase;letter-spacing:1px">Qty</th>
+            <th align="right" style="padding:12px 16px;color:#365342;font-size:11px;line-height:1.3;text-transform:uppercase;letter-spacing:1px">Amount</th>
+          </tr>
+          ${rows}
+        </table>
+      </td></tr>
+      <tr><td align="right" style="padding:22px 44px 24px">
+        <span style="color:#586b5e;font-size:14px">Order total&nbsp;&nbsp;</span><strong style="color:#123f2b;font-size:26px;line-height:1.2">$${(subtotalCents / 100).toFixed(2)}</strong>
+      </td></tr>
+      <tr><td align="center" bgcolor="#f5f7f2" style="background-color:#f5f7f2;padding:22px 20px 24px;border-top:1px solid #e4e9e1">
+        <p style="margin:0 0 14px;color:#465b4d;font-size:14px;line-height:1.5">A good book is always worth coming back for.</p>
+        <a href="${safeStorefrontUrl}" bgcolor="#123f2b" style="display:inline-block;background-color:#123f2b;color:#ffffff;text-decoration:none;padding:13px 24px;font-size:14px;line-height:1.2;font-weight:bold">Return to Starbooks</a>
+      </td></tr>
+      <tr><td align="center" style="padding:20px 24px 22px;color:#66756b;font-size:12px;line-height:1.7">
+        Questions about your receipt? Reply to this email or contact<br>
+        <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:bold;text-decoration:underline">${fromEmail}</a>.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>`,
       }),
     });
   } catch (error) {
