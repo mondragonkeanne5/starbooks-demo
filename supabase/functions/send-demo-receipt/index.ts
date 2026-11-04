@@ -74,6 +74,7 @@ Deno.serve(async (request) => {
   const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? request.headers.get("apikey") ?? "";
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("STARBOOKS_FROM_EMAIL");
+  const storefrontUrl = Deno.env.get("SITE_URL") ?? "https://hotspotandco.com";
   if (!supabaseUrl || !publishableKey || !resendApiKey || !fromEmail) {
     console.error("Email checkout configuration is incomplete.");
     return jsonResponse({ error: "Email checkout is not configured yet." }, request, 503);
@@ -104,6 +105,7 @@ Deno.serve(async (request) => {
   ).join("");
 
   let emailResponse: Response;
+  const safeStorefrontUrl = escapeHtml(storefrontUrl);
   try {
     emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -134,7 +136,11 @@ Deno.serve(async (request) => {
     <span style="font-size:15px;color:#5a685f;margin-right:12px">Total Amount:</span>
     <strong style="font-size:22px;color:#123f2b">$${(subtotalCents / 100).toFixed(2)}</strong>
   </div>
-  <div style="background:#f1f6ed;border:1px solid #d9e6d3;padding:14px;border-radius:8px;font-size:13px;color:#3f5446;text-align:center;line-height:1.4">
+  <div style="background:#f1f6ed;border:1px solid #d9e6d3;padding:16px;border-radius:8px;font-size:13px;color:#3f5446;text-align:center;line-height:1.5">
+    <p style="margin:0 0 12px">Continue browsing or come back to your next favorite read:</p>
+    <a href="${safeStorefrontUrl}" style="display:inline-block;background:#123f2b;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600">Visit Starbooks</a>
+  </div>
+  <div style="background:#f1f6ed;border:1px solid #d9e6d3;padding:14px;border-radius:8px;font-size:13px;color:#3f5446;text-align:center;line-height:1.4;margin-top:16px">
     If you have any questions about this receipt, reply directly to this email at <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:600;text-decoration:underline">${fromEmail}</a>.
   </div>
 </div>`,
