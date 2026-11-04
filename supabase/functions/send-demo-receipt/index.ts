@@ -146,8 +146,8 @@ Deno.serve(async (request) => {
       <tr><td align="center" bgcolor="#123f2b" style="background-color:#123f2b;padding:25px 20px 28px">
         <p style="margin:0 0 15px;color:#ffffff;font-size:16px;line-height:1.4;font-weight:bold">Ready for another good read?</p>
         <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
-          <tr><td align="center" bgcolor="#e3c985" style="background-color:#e3c985;border:1px solid #f0dda7">
-            <a href="${safeStorefrontUrl}" style="display:inline-block;padding:14px 26px;color:#173b2b;text-decoration:none;font-size:13px;line-height:1.2;font-weight:bold;letter-spacing:1px;text-transform:uppercase">Explore the bookshop</a>
+          <tr><td align="center" bgcolor="#e3c985" style="background-color:#e3c985;border:1px solid #f0dda7;padding:15px 28px">
+            <a href="${safeStorefrontUrl}" style="display:block;color:#173b2b;text-decoration:none;font-size:13px;line-height:18px;font-weight:bold;letter-spacing:1px;text-transform:uppercase">Explore the bookshop</a>
           </td></tr>
         </table>
       </td></tr>
