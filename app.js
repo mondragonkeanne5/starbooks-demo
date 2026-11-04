@@ -30,6 +30,7 @@ const cart = loadCart();
 let activeCategory = "All";
 let toastTimer;
 let catalogLoaded = cards.length > 0;
+let usingFallbackCatalog = false;
 function loadLastOrderSubtotalCents() {
   try {
     const stored = localStorage.getItem("starbookLastOrderSubtotalCents");
@@ -49,6 +50,34 @@ const formatPrice = (amount) => new Intl.NumberFormat("en-PH", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 }).format(amount);
+
+const fallbackBooks = [
+  { isbn: "9780525559474", title: "The Midnight Library", author: "Matt Haig", price_cents: 112675, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780525559474-L.jpg", cover_tone: "blue", staff_pick: true },
+  { isbn: "9780593321201", title: "Tomorrow, and Tomorrow, and Tomorrow", author: "Gabrielle Zevin", price_cents: 122064, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780593321201-L.jpg", cover_tone: "coral", staff_pick: true },
+  { isbn: "9780525657743", title: "Crying in H Mart", author: "Michelle Zauner", price_cents: 106415, category: "Nonfiction", genre_label: "Memoir", cover_url: "https://covers.openlibrary.org/b/isbn/9780525657743-L.jpg", cover_tone: "yellow", staff_pick: false },
+  { isbn: "9781250217288", title: "The House in the Cerulean Sea", author: "TJ Klune", price_cents: 112675, category: "Fantasy", genre_label: "Fantasy", cover_url: "https://covers.openlibrary.org/b/isbn/9781250217288-L.jpg", cover_tone: "teal", staff_pick: false },
+  { isbn: "9780593135204", title: "Project Hail Mary", author: "Andy Weir", price_cents: 125000, category: "Fiction", genre_label: "Science Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780593135204-L.jpg", cover_tone: "blue", staff_pick: false },
+  { isbn: "9780735211292", title: "Atomic Habits", author: "James Clear", price_cents: 85000, category: "Nonfiction", genre_label: "Nonfiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780735211292-L.jpg", cover_tone: "coral", staff_pick: false },
+  { isbn: "9780547928227", title: "The Hobbit", author: "J.R.R. Tolkien", price_cents: 75000, category: "Fantasy", genre_label: "Fantasy", cover_url: "https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg", cover_tone: "yellow", staff_pick: false },
+  { isbn: "9781524763138", title: "Becoming", author: "Michelle Obama", price_cents: 95000, category: "Nonfiction", genre_label: "Memoir", cover_url: "https://covers.openlibrary.org/b/isbn/9781524763138-L.jpg", cover_tone: "teal", staff_pick: false },
+  { isbn: "9781649374042", title: "Fourth Wing", author: "Rebecca Yarros", price_cents: 109500, category: "Fantasy", genre_label: "Fantasy", cover_url: "https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg", cover_tone: "coral", staff_pick: false },
+  { isbn: "9780062315007", title: "The Alchemist", author: "Paulo Coelho", price_cents: 67500, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780062315007-L.jpg", cover_tone: "yellow", staff_pick: false },
+  { isbn: "9780399590504", title: "Educated", author: "Tara Westover", price_cents: 92500, category: "Nonfiction", genre_label: "Memoir", cover_url: "https://covers.openlibrary.org/b/isbn/9780399590504-L.jpg", cover_tone: "teal", staff_pick: false },
+  { isbn: "9780062060624", title: "The Song of Achilles", author: "Madeline Miller", price_cents: 79500, category: "Fantasy", genre_label: "Mythology", cover_url: "https://covers.openlibrary.org/b/isbn/9780062060624-L.jpg", cover_tone: "blue", staff_pick: false },
+  { isbn: "9780857197689", title: "The Psychology of Money", author: "Morgan Housel", price_cents: 82500, category: "Nonfiction", genre_label: "Business", cover_url: "https://covers.openlibrary.org/b/isbn/9780857197689-L.jpg", cover_tone: "coral", staff_pick: false },
+  { isbn: "9780593439357", title: "The Very Secret Society of Irregular Witches", author: "Sangu Mandanna", price_cents: 87500, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780593439357-L.jpg", cover_tone: "yellow", staff_pick: false },
+];
+
+function showFallbackCatalog() {
+  if (!bookGrid) return;
+  bookGrid.replaceChildren(...fallbackBooks.map(createBookCard));
+  cards = [...bookGrid.querySelectorAll(".book-card")];
+  catalogLoaded = true;
+  usingFallbackCatalog = true;
+  emptyState.textContent = "Showing the saved catalog. Prices may not reflect recent updates.";
+  emptyState.hidden = false;
+  applyFilters();
+}
 
 function createBookCard(book) {
   const card = document.createElement("article");
@@ -101,10 +130,7 @@ function createBookCard(book) {
 async function loadBookCatalog() {
   if (!bookGrid) return;
   if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
-    if (cards.length === 0) {
-      emptyState.textContent = "The book catalog is unavailable right now.";
-      emptyState.hidden = false;
-    }
+    showFallbackCatalog();
     bookGrid.setAttribute("aria-busy", "false");
     return;
   }
@@ -123,6 +149,7 @@ async function loadBookCatalog() {
     bookGrid.replaceChildren(...books.map(createBookCard));
     cards = [...bookGrid.querySelectorAll(".book-card")];
     catalogLoaded = true;
+    usingFallbackCatalog = false;
     if (cards.length === 0) {
       emptyState.textContent = "No books are available right now.";
       emptyState.hidden = false;
@@ -130,10 +157,7 @@ async function loadBookCatalog() {
     }
     applyFilters();
   } catch (error) {
-    if (cards.length === 0) {
-      emptyState.textContent = "The book catalog is unavailable right now.";
-      emptyState.hidden = false;
-    }
+    showFallbackCatalog();
     console.warn("Could not load the database catalog; keeping the saved catalog visible.", error);
   } finally {
     bookGrid.setAttribute("aria-busy", "false");
@@ -153,7 +177,9 @@ function applyFilters() {
     card.hidden = !isVisible;
     if (isVisible) visibleCount += 1;
   });
-  emptyState.hidden = visibleCount !== 0;
+  emptyState.hidden = visibleCount !== 0 && !usingFallbackCatalog;
+  if (visibleCount === 0) emptyState.textContent = "No books found. Try a different search.";
+  else if (usingFallbackCatalog) emptyState.textContent = "Showing the saved catalog. Prices may not reflect recent updates.";
 }
 
 function showToast(message) {
