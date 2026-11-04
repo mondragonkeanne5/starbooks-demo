@@ -143,9 +143,13 @@ Deno.serve(async (request) => {
       <tr><td align="right" style="padding:22px 44px 24px">
         <span style="color:#586b5e;font-size:14px">Order total&nbsp;&nbsp;</span><strong style="color:#123f2b;font-size:26px;line-height:1.2">$${(subtotalCents / 100).toFixed(2)}</strong>
       </td></tr>
-      <tr><td align="center" bgcolor="#f5f7f2" style="background-color:#f5f7f2;padding:22px 20px 24px;border-top:1px solid #e4e9e1">
-        <p style="margin:0 0 14px;color:#465b4d;font-size:14px;line-height:1.5">A good book is always worth coming back for.</p>
-        <a href="${safeStorefrontUrl}" bgcolor="#123f2b" style="display:inline-block;background-color:#123f2b;color:#ffffff;text-decoration:none;padding:13px 24px;font-size:14px;line-height:1.2;font-weight:bold">Return to Starbooks</a>
+      <tr><td align="center" bgcolor="#123f2b" style="background-color:#123f2b;padding:25px 20px 28px">
+        <p style="margin:0 0 15px;color:#ffffff;font-size:16px;line-height:1.4;font-weight:bold">Ready for another good read?</p>
+        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
+          <tr><td align="center" bgcolor="#e3c985" style="background-color:#e3c985;border:1px solid #f0dda7">
+            <a href="${safeStorefrontUrl}" style="display:inline-block;padding:14px 26px;color:#173b2b;text-decoration:none;font-size:13px;line-height:1.2;font-weight:bold;letter-spacing:1px;text-transform:uppercase">Explore the bookshop</a>
+          </td></tr>
+        </table>
       </td></tr>
       <tr><td align="center" style="padding:20px 24px 22px;color:#66756b;font-size:12px;line-height:1.7">
         Questions about your receipt? Reply to this email or contact<br>
