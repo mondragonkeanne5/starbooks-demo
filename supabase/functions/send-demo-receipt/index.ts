@@ -71,7 +71,7 @@ Deno.serve(async (request) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const publishableKey = request.headers.get("apikey") ?? "";
+  const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? request.headers.get("apikey") ?? "";
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("STARBOOKS_FROM_EMAIL");
   if (!supabaseUrl || !publishableKey || !resendApiKey || !fromEmail) {

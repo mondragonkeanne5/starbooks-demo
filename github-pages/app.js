@@ -16,6 +16,40 @@ const backendConfig = window.STARBOOKS_CONFIG || {};
 const cart = new Map();
 let activeCategory = "All";
 let toastTimer;
+let catalogLoaded = false;
+let usingFallbackCatalog = false;
+const formatPrice = (amount) => new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}).format(amount);
+const fallbackBooks = [
+  { isbn: "9780525559474", title: "The Midnight Library", author: "Matt Haig", price_cents: 112675, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780525559474-L.jpg", cover_tone: "blue", staff_pick: true },
+  { isbn: "9780593321201", title: "Tomorrow, and Tomorrow, and Tomorrow", author: "Gabrielle Zevin", price_cents: 122064, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780593321201-L.jpg", cover_tone: "coral", staff_pick: true },
+  { isbn: "9780525657743", title: "Crying in H Mart", author: "Michelle Zauner", price_cents: 106415, category: "Nonfiction", genre_label: "Memoir", cover_url: "https://covers.openlibrary.org/b/isbn/9780525657743-L.jpg", cover_tone: "yellow", staff_pick: false },
+  { isbn: "9781250217288", title: "The House in the Cerulean Sea", author: "TJ Klune", price_cents: 112675, category: "Fantasy", genre_label: "Fantasy", cover_url: "https://covers.openlibrary.org/b/isbn/9781250217288-L.jpg", cover_tone: "teal", staff_pick: false },
+  { isbn: "9780593135204", title: "Project Hail Mary", author: "Andy Weir", price_cents: 125000, category: "Fiction", genre_label: "Science Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780593135204-L.jpg", cover_tone: "blue", staff_pick: false },
+  { isbn: "9780735211292", title: "Atomic Habits", author: "James Clear", price_cents: 85000, category: "Nonfiction", genre_label: "Nonfiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780735211292-L.jpg", cover_tone: "coral", staff_pick: false },
+  { isbn: "9780547928227", title: "The Hobbit", author: "J.R.R. Tolkien", price_cents: 75000, category: "Fantasy", genre_label: "Fantasy", cover_url: "https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg", cover_tone: "yellow", staff_pick: false },
+  { isbn: "9781524763138", title: "Becoming", author: "Michelle Obama", price_cents: 95000, category: "Nonfiction", genre_label: "Memoir", cover_url: "https://covers.openlibrary.org/b/isbn/9781524763138-L.jpg", cover_tone: "teal", staff_pick: false },
+  { isbn: "9781649374042", title: "Fourth Wing", author: "Rebecca Yarros", price_cents: 109500, category: "Fantasy", genre_label: "Fantasy", cover_url: "https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg", cover_tone: "coral", staff_pick: false },
+  { isbn: "9780062315007", title: "The Alchemist", author: "Paulo Coelho", price_cents: 67500, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780062315007-L.jpg", cover_tone: "yellow", staff_pick: false },
+  { isbn: "9780399590504", title: "Educated", author: "Tara Westover", price_cents: 92500, category: "Nonfiction", genre_label: "Memoir", cover_url: "https://covers.openlibrary.org/b/isbn/9780399590504-L.jpg", cover_tone: "teal", staff_pick: false },
+  { isbn: "9780062060624", title: "The Song of Achilles", author: "Madeline Miller", price_cents: 79500, category: "Fantasy", genre_label: "Mythology", cover_url: "https://covers.openlibrary.org/b/isbn/9780062060624-L.jpg", cover_tone: "blue", staff_pick: false },
+  { isbn: "9780857197689", title: "The Psychology of Money", author: "Morgan Housel", price_cents: 82500, category: "Nonfiction", genre_label: "Business", cover_url: "https://covers.openlibrary.org/b/isbn/9780857197689-L.jpg", cover_tone: "coral", staff_pick: false },
+  { isbn: "9780593439357", title: "The Very Secret Society of Irregular Witches", author: "Sangu Mandanna", price_cents: 87500, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780593439357-L.jpg", cover_tone: "yellow", staff_pick: false },
+];
+
+function showFallbackCatalog() {
+  bookGrid.replaceChildren(...fallbackBooks.map(createBookCard));
+  cards = [...bookGrid.querySelectorAll(".book-card")];
+  catalogLoaded = true;
+  usingFallbackCatalog = true;
+  emptyState.textContent = "Showing the saved catalog. Prices may not reflect recent updates.";
+  emptyState.hidden = false;
+  applyFilters();
+}
 
 function createBookCard(book) {
   const card = document.createElement("article");
@@ -61,7 +95,7 @@ function createBookCard(book) {
   text.append(title, author);
   const price = document.createElement("span");
   price.className = "price";
-  price.textContent = `$${(book.price_cents / 100).toFixed(2)}`;
+  price.textContent = formatPrice(book.price_cents / 100);
   info.append(text, price);
   card.append(info);
 
@@ -73,7 +107,11 @@ function createBookCard(book) {
 }
 
 async function loadBookCatalog() {
-  if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) return;
+  if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
+    showFallbackCatalog();
+    bookGrid.setAttribute("aria-busy", "false");
+    return;
+  }
   const query = new URLSearchParams({
     select: "isbn,title,author,price_cents,category,genre_label,cover_url,cover_tone,staff_pick",
     active: "eq.true",
@@ -85,18 +123,29 @@ async function loadBookCatalog() {
     });
     if (!response.ok) throw new Error(`Catalog request failed (${response.status}).`);
     const books = await response.json();
-    if (!Array.isArray(books) || books.length === 0) return;
+    if (!Array.isArray(books)) throw new Error("Catalog response was invalid.");
     bookGrid.replaceChildren(...books.map(createBookCard));
     cards = [...bookGrid.querySelectorAll(".book-card")];
+    catalogLoaded = true;
+    usingFallbackCatalog = false;
+    if (cards.length === 0) {
+      emptyState.textContent = "No books are available right now.";
+      emptyState.hidden = false;
+      return;
+    }
     applyFilters();
   } catch (error) {
-    console.warn("Could not load the database catalog; showing the preview catalog instead.", error);
+    showFallbackCatalog();
+    console.warn("Could not load the database catalog.", error);
+  } finally {
+    bookGrid.setAttribute("aria-busy", "false");
   }
 }
 
 void loadBookCatalog();
 
 function applyFilters() {
+  if (!catalogLoaded) return;
   const query = searchInput.value.trim().toLowerCase();
   let visibleCount = 0;
   cards.forEach((card) => {
@@ -107,7 +156,9 @@ function applyFilters() {
     card.hidden = !isVisible;
     if (isVisible) visibleCount += 1;
   });
-  emptyState.hidden = visibleCount !== 0;
+  emptyState.hidden = visibleCount !== 0 && !usingFallbackCatalog;
+  if (visibleCount === 0) emptyState.textContent = "No books found. Try a different search.";
+  else if (usingFallbackCatalog) emptyState.textContent = "Showing the saved catalog. Prices may not reflect recent updates.";
 }
 
 function showToast(message) {
@@ -145,7 +196,7 @@ function renderCart() {
   bagCount.textContent = String(totalItems);
   document.querySelector("#open-cart").setAttribute("aria-label", `Open shopping bag, ${totalItems} items`);
   cartItemCount.textContent = `(${totalItems})`;
-  cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+  cartSubtotal.textContent = formatPrice(subtotal);
   checkoutButton.disabled = totalItems === 0;
   checkoutButton.hidden = false;
   if (totalItems === 0) {
@@ -159,7 +210,7 @@ function renderCart() {
     <article class="cart-line">
       <img src="https://covers.openlibrary.org/b/isbn/${isbn}-S.jpg" alt="" />
       <div><h3>${item.title}</h3><p>${item.author}</p><div class="quantity-controls" aria-label="Quantity for ${item.title}"><button type="button" data-action="decrease" data-isbn="${isbn}" aria-label="Remove one ${item.title}">−</button><span>${item.quantity}</span><button type="button" data-action="increase" data-isbn="${isbn}" aria-label="Add one ${item.title}">+</button></div></div>
-      <span class="cart-line-price">$${(item.price * item.quantity).toFixed(2)}</span>
+      <span class="cart-line-price">${formatPrice(item.price * item.quantity)}</span>
     </article>`).join("");
 }
 
@@ -222,9 +273,10 @@ checkoutForm.addEventListener("submit", async (event) => {
   submitButton.disabled = true;
   checkoutMessage.textContent = "Sending receipt...";
   try {
-    const response = await fetch(`${backendConfig.supabaseUrl}/functions/v1/send-demo-receipt`, {
+    const checkoutUrl = new URL(`${backendConfig.supabaseUrl}/functions/v1/send-demo-receipt`);
+    const response = await fetch(checkoutUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: backendConfig.supabaseAnonKey },
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
       body: JSON.stringify(request),
     });
     const result = await response.json();
