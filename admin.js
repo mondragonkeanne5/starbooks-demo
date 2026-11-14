@@ -115,7 +115,14 @@ function renderProducts() {
     toggle.dataset.action = "toggle";
     toggle.dataset.isbn = product.isbn;
     toggle.textContent = product.active ? "Hide" : "Publish";
-    actions.append(edit, toggle);
+    const remove = document.createElement("button");
+    remove.className = "row-button row-button-danger";
+    remove.type = "button";
+    remove.dataset.action = "delete";
+    remove.dataset.isbn = product.isbn;
+    remove.setAttribute("aria-label", `Permanently delete ${product.title}`);
+    remove.textContent = "Delete";
+    actions.append(edit, toggle, remove);
 
     row.append(cover, details, price, actions);
     return row;
@@ -245,6 +252,21 @@ productList.addEventListener("click", async (event) => {
   if (!product) return;
   if (button.dataset.action === "edit") {
     editProduct(product);
+    return;
+  }
+
+  if (button.dataset.action === "delete") {
+    if (!window.confirm(`Permanently delete "${product.title}"? This cannot be undone.`)) return;
+    button.disabled = true;
+    const { error } = await client.from("books").delete().eq("isbn", product.isbn);
+    button.disabled = false;
+    if (error) {
+      showMessage(catalogMessage, error.message || "Could not delete this book.", "is-error");
+      return;
+    }
+    if (productForm.elements.original_isbn.value === product.isbn) resetProductForm();
+    showMessage(catalogMessage, `Deleted ${product.title}.`, "is-success");
+    await loadProducts();
     return;
   }
 

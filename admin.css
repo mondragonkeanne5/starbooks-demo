@@ -90,6 +90,8 @@ button { color: inherit; }
 .row-button { min-height: 27px; padding: 0 9px; border: 1px solid #ccd7ca; background: #fffefa; color: var(--forest); cursor: pointer; font-size: 9px; font-weight: 600; }
 .row-button:hover:not(:disabled) { border-color: var(--forest); }
 .row-button-secondary { color: #6b7169; }
+.row-button-danger { border-color: #dfc4bd; color: #a54235; }
+.row-button-danger:hover:not(:disabled) { border-color: #a54235; background: #fff0eb; }
 .list-empty { padding: 26px 0; color: var(--muted); font-family: var(--serif); font-size: 14px; }
 .editor-panel { position: sticky; top: 16px; padding: 20px; border-top: 3px solid var(--rust); background: var(--white); box-shadow: 0 8px 24px rgba(31,48,40,.045); }
 .editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 17px; }
