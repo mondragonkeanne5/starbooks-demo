@@ -182,7 +182,7 @@ async function activateSession(session) {
   }
 
   setSignedIn(true);
-  signedInAs.textContent = session.user.email || "Signed in";
+  signedInAs.textContent = "Signed in";
   await loadProducts();
 }
 
@@ -199,16 +199,31 @@ if (!config.supabaseUrl || !config.supabaseAnonKey || !window.supabase?.createCl
     loginButton.disabled = true;
     showMessage(loginMessage, "Signing in...");
     const formData = new FormData(loginForm);
-    const { data, error } = await client.auth.signInWithPassword({
-      email: formData.get("email"),
-      password: formData.get("password"),
-    });
-    if (error) {
-      showMessage(loginMessage, error.message || "Sign-in failed. Check your email and password.", "is-error");
-    } else {
-      await activateSession(data.session);
+    try {
+      const { data, error } = await client.functions.invoke("admin-login", {
+        body: {
+          username: String(formData.get("username") || "").trim().toLowerCase(),
+          password: formData.get("password"),
+        },
+      });
+      if (error || !data?.access_token || !data?.refresh_token) {
+        showMessage(loginMessage, "Username or password is incorrect, or sign-in is temporarily unavailable.", "is-error");
+      } else {
+        const { data: sessionData, error: sessionError } = await client.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        if (sessionError || !sessionData.session) {
+          showMessage(loginMessage, "Sign-in could not be completed. Please try again.", "is-error");
+        } else {
+          await activateSession(sessionData.session);
+        }
+      }
+    } catch {
+      showMessage(loginMessage, "Username or password is incorrect, or sign-in is temporarily unavailable.", "is-error");
+    } finally {
+      loginButton.disabled = false;
     }
-    loginButton.disabled = false;
   });
 
   signOutButton.addEventListener("click", async () => {
