@@ -26,4 +26,4 @@ In **Authentication > URL Configuration**, set the Site URL to `https://hotspota
 - `https://hotspotandco.com/**`
 - `https://www.hotspotandco.com/**`
 
-Apply the catalog-admin migration in `supabase/migrations` and deploy the `admin-login` Edge Function before authorizing an account.
+Apply the migrations in `supabase/migrations` and deploy the `admin-login` Edge Function before authorizing an account. The login function's service role can read only the private username and email mapping columns it needs.
