@@ -1,4 +1,4 @@
 project_id = "starbooks-demo"
 
-[functions.admin-login]
+[functions.send-demo-receipt]
 verify_jwt = false

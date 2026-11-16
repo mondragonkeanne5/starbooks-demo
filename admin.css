@@ -22,7 +22,8 @@ button { color: inherit; }
 [hidden] { display: none !important; }
 .admin-header { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px max(5vw, 22px); background: var(--forest); color: white; }
 .admin-brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 19px; font-weight: 700; }
-.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; color: var(--leaf); font-size: 17px; }
+.admin-brand .brand-logo { width: 38px; height: 38px; display: block; border-radius: 50%; background: white; object-fit: cover; }
+.admin-brand .brand-name { display: inline-flex; align-items: baseline; gap: 5px; }
 .admin-brand small { display: block; margin-top: 2px; color: #c6d1c5; font-family: var(--sans); font-size: 8px; font-weight: 600; letter-spacing: .15em; }
 .header-actions { display: flex; align-items: center; gap: 18px; }
 .store-link { color: #e6ecdf; font-size: 11px; }
@@ -131,7 +132,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
 @media (max-width: 480px) {
   .admin-header { min-height: 62px; padding-inline: 16px; }
   .admin-brand { font-size: 16px; }
-  .brand-mark { width: 34px; height: 34px; }
+  .admin-brand .brand-logo { width: 34px; height: 34px; }
   .header-actions { gap: 10px; }
   .store-link { font-size: 9px; }
   .signed-in-as { display: none; }
