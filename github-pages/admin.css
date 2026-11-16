@@ -102,6 +102,9 @@ button { color: inherit; }
 .form-grid .field-wide { grid-column: 1 / -1; }
 .form-grid label { font-size: 9px; }
 .form-grid input, .form-grid select { height: 36px; padding: 0 8px; font-size: 10px; }
+.cover-upload-label { display: grid; gap: 8px; }
+.cover-upload-label input[type="file"] { height: auto; padding: 9px 10px; border: 1px dashed #cbd5c7; background: #f9faf7; }
+.cover-upload-hint { color: #69776a; font-size: 9px; }
 .check-row { display: flex; flex-wrap: wrap; gap: 16px; margin: 17px 0; }
 .check-label { display: inline-flex; align-items: center; gap: 7px; color: #59665b; font-size: 9px; cursor: pointer; }
 .check-label input { width: 15px; height: 15px; margin: 0; accent-color: var(--forest); }

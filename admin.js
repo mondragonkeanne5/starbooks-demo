@@ -36,6 +36,7 @@ function priceLabel(priceCents) {
 function resetProductForm() {
   productForm.reset();
   productForm.elements.original_isbn.value = "";
+  productForm.elements.cover_url.value = "";
   productForm.elements.active.checked = true;
   document.querySelector("#editor-title").textContent = "New book";
   document.querySelector("#save-product").innerHTML = 'Add book <span aria-hidden="true">→</span>';
@@ -157,6 +158,7 @@ function editProduct(product) {
   productForm.elements.category.value = product.category;
   productForm.elements.genre_label.value = product.genre_label;
   productForm.elements.cover_url.value = product.cover_url;
+  productForm.elements.cover_file.value = "";
   productForm.elements.cover_tone.value = product.cover_tone;
   productForm.elements.sort_order.value = String(product.sort_order);
   productForm.elements.staff_pick.checked = product.staff_pick;
@@ -307,14 +309,39 @@ productForm.addEventListener("submit", async (event) => {
   const isbn = String(formData.get("isbn") || "").replace(/\D/g, "");
   const price = Number(formData.get("price"));
   const sortOrder = Number(formData.get("sort_order"));
-  let coverUrl;
-  try {
-    coverUrl = new URL(String(formData.get("cover_url") || ""));
-  } catch {
-    coverUrl = null;
+  let coverUrl = String(formData.get("cover_url") || "").trim();
+  const coverFile = productForm.elements.cover_file.files?.[0];
+
+  if (coverFile) {
+    const extensionByType = {
+      "image/gif": "gif",
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    };
+    const extension = extensionByType[coverFile.type];
+    if (!extension || coverFile.size > 5 * 1024 * 1024) {
+      showMessage(productMessage, "Choose a PNG, JPG, GIF, or WEBP image under 5 MB.", "is-error");
+      submitButton.disabled = false;
+      return;
+    }
+
+    try {
+      const objectPath = `${isbn}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await client.storage
+        .from("book-covers")
+        .upload(objectPath, coverFile, { contentType: coverFile.type, cacheControl: "3600" });
+      if (uploadError) throw uploadError;
+      coverUrl = client.storage.from("book-covers").getPublicUrl(objectPath).data.publicUrl;
+    } catch {
+      showMessage(productMessage, "The image could not be uploaded. Please try again.", "is-error");
+      submitButton.disabled = false;
+      return;
+    }
   }
-  if (!/^\d{10,13}$/.test(isbn) || !Number.isFinite(price) || price <= 0 || !Number.isInteger(sortOrder) || sortOrder < 0 || !coverUrl || !["http:", "https:"].includes(coverUrl.protocol)) {
-    showMessage(productMessage, "Check the ISBN, price, display order, and cover URL.", "is-error");
+
+  if (!/^\d{10,13}$/.test(isbn) || !Number.isFinite(price) || price <= 0 || !Number.isInteger(sortOrder) || sortOrder < 0 || !coverUrl) {
+    showMessage(productMessage, "Check the ISBN, price, display order, and cover image.", "is-error");
     submitButton.disabled = false;
     return;
   }
@@ -326,7 +353,7 @@ productForm.addEventListener("submit", async (event) => {
     price_cents: Math.round(price * 100),
     category: formData.get("category"),
     genre_label: String(formData.get("genre_label") || "").trim(),
-    cover_url: coverUrl.toString(),
+    cover_url: coverUrl,
     cover_tone: formData.get("cover_tone"),
     staff_pick: formData.has("staff_pick"),
     active: formData.has("active"),
