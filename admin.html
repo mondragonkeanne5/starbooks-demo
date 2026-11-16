@@ -9,10 +9,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="admin.css?v=3" />
+    <link rel="stylesheet" href="admin.css?v=4" />
     <script src="backend-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="admin.js?v=3" defer></script>
+    <script src="admin.js?v=4" defer></script>
   </head>
   <body>
     <header class="admin-header">
@@ -36,7 +36,7 @@
             <p class="eyebrow eyebrow-dark">ADMIN ACCESS</p>
             <h2>Sign in</h2>
           </div>
-          <label>Username<input name="username" type="text" autocomplete="username" minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" required /></label>
+          <label>Username<input name="username" type="text" autocomplete="username" minlength="3" maxlength="32" required /></label>
           <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
           <button id="login-button" class="button button-primary" type="submit">Sign in <span aria-hidden="true">→</span></button>
           <p id="login-message" class="message" role="status" aria-live="polite"></p>
