@@ -33,11 +33,17 @@ function priceLabel(priceCents) {
   return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(priceCents / 100);
 }
 
+function updateCoverFileName() {
+  const file = productForm.elements.cover_file.files?.[0];
+  document.querySelector("#cover-file-name").textContent = file?.name || "No file selected";
+}
+
 function resetProductForm() {
   productForm.reset();
   productForm.elements.original_isbn.value = "";
   productForm.elements.cover_url.value = "";
   productForm.elements.active.checked = true;
+  updateCoverFileName();
   document.querySelector("#editor-title").textContent = "New book";
   document.querySelector("#save-product").innerHTML = 'Add book <span aria-hidden="true">→</span>';
   showMessage(productMessage, "");
@@ -159,6 +165,7 @@ function editProduct(product) {
   productForm.elements.genre_label.value = product.genre_label;
   productForm.elements.cover_url.value = product.cover_url;
   productForm.elements.cover_file.value = "";
+  updateCoverFileName();
   productForm.elements.cover_tone.value = product.cover_tone;
   productForm.elements.sort_order.value = String(product.sort_order);
   productForm.elements.staff_pick.checked = product.staff_pick;
@@ -250,6 +257,7 @@ document.querySelector("#new-product").addEventListener("click", () => {
   productForm.elements.title.focus();
 });
 
+productForm.elements.cover_file.addEventListener("change", updateCoverFileName);
 document.querySelector("#reset-product").addEventListener("click", resetProductForm);
 catalogSearch.addEventListener("input", renderProducts);
 filterButtons.forEach((button) => button.addEventListener("click", () => {
