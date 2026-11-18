@@ -119,41 +119,34 @@ Deno.serve(async (request) => {
       body: JSON.stringify({
         from: `Starbook <${fromEmail}>`,
         to: [email],
-        subject: `Starbook receipt ${reference}`,
-        html: `<div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f3028;max-width:600px;margin:0 auto;border:1px solid #dfe6dc;background:#fcfdfa">
-  <div style="background:#123f2b;color:#ffffff;text-align:center;padding:24px 20px 20px">
-    <p style="margin:0 0 8px;font-size:10px;line-height:1;color:#d7e5d2;text-transform:uppercase;letter-spacing:1.8px">A note from your bookseller</p>
-    <h1 style="margin:0;font-size:28px;line-height:1.2;color:#ffffff">Starbooks Bookhouse</h1>
-    <p style="margin:8px 0 0;font-size:14px;color:#dfe9dc">Your order receipt</p>
-  </div>
-  <div style="padding:24px 28px 18px">
-    <p style="font-size:14px;line-height:1.6;margin:0 0 16px;color:#46564d">Thank you for your order. Keep this receipt reference for your records:</p>
-    <p style="margin:0 0 22px;color:#123f2b;font-size:16px;font-weight:700">${reference}</p>
-    <table style="width:100%;border-collapse:collapse" cellpadding="12">
-      <thead>
-        <tr style="background:#edf3e5">
-          <th align="left" style="font-size:11px;text-transform:uppercase;color:#123f2b;letter-spacing:.6px">Book</th>
-          <th align="center" style="width:64px;font-size:11px;text-transform:uppercase;color:#123f2b;letter-spacing:.6px">Qty</th>
-          <th align="right" style="width:90px;font-size:11px;text-transform:uppercase;color:#123f2b;letter-spacing:.6px">Amount</th>
-        </tr>
-      </thead>
-      <tbody style="font-size:13px">
-        ${rows.replaceAll('<tr>', '<tr style="border-bottom:1px solid #dde4d9">').replaceAll('<td>', '<td style="padding:16px 12px;color:#1f3028">')}
-      </tbody>
+        subject: `Starbooks receipt ${reference}`,
+        html: `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#edf1ec;margin:0;padding:24px 0"><tr><td align="center">
+<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:600px;max-width:600px;font-family:Arial,Helvetica,sans-serif;color:#26352d;background:#ffffff;border:1px solid #d9e1d6">
+  <tr><td align="center" style="background:#123f2b;padding:22px 24px 18px;border-bottom:4px solid #d8c58a">
+    <div style="font-size:10px;line-height:14px;text-transform:uppercase;letter-spacing:2px;color:#dce8d8">A note from your bookseller</div>
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:38px;font-weight:700;color:#ffffff;padding-top:4px">Starbooks Bookhouse</div>
+    <div style="font-size:13px;line-height:18px;color:#dce8d8;padding-top:3px">Your order receipt</div>
+  </td></tr>
+  <tr><td style="padding:26px 30px 8px">
+    <div style="font-size:14px;line-height:22px;color:#56655d;padding-bottom:10px">Thank you for your order. Keep this receipt reference for your records:</div>
+    <div style="font-size:17px;line-height:24px;font-weight:700;color:#123f2b;padding-bottom:22px">${reference}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse">
+      <tr style="background:#edf3e5">
+        <td align="left" style="padding:12px 10px;font-size:11px;line-height:14px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#123f2b">Book</td>
+        <td align="center" width="52" style="padding:12px 8px;font-size:11px;line-height:14px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#123f2b">Qty</td>
+        <td align="right" width="112" style="padding:12px 10px;font-size:11px;line-height:14px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#123f2b">Amount</td>
+      </tr>
+      ${items.map((item) => `<tr><td style="padding:15px 10px;border-bottom:1px solid #dde4d9;font-size:14px;line-height:20px;color:#26352d"><strong style="font-weight:700">${escapeHtml(item.title)}</strong><div style="font-size:12px;line-height:18px;color:#6c766f">by ${escapeHtml(item.author)}</div></td><td align="center" style="padding:15px 8px;border-bottom:1px solid #dde4d9;font-size:14px;color:#26352d">${item.quantity}</td><td align="right" style="padding:15px 10px;border-bottom:1px solid #dde4d9;font-size:14px;font-weight:700;color:#26352d">${formatPrice(item.unit_price_cents * item.quantity / 100)}</td></tr>`).join("")}
     </table>
-    <div style="text-align:right;padding:22px 12px 18px;border-top:1px solid #e0e5dc;margin-top:4px">
-      <span style="font-size:14px;color:#5a685f;margin-right:10px">Order total</span>
-      <strong style="font-size:23px;color:#123f2b">${formatPrice(subtotalCents / 100)}</strong>
-    </div>
-  </div>
-  <div style="background:#123f2b;text-align:center;padding:22px 20px 24px;color:#ffffff">
-    <p style="margin:0 0 14px;font-size:15px;font-weight:600">Ready for another good read?</p>
-    <a href="https://hotspotandco.com/books.html" style="display:inline-block;background:#f1cf78;color:#123f2b;text-decoration:none;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:15px 24px;border-radius:2px">Explore the bookstore</a>
-  </div>
-  <div style="text-align:center;padding:16px 20px;border-top:1px solid #e2e8df;font-size:12px;line-height:1.5;color:#5a685f">
-    Questions about your receipt? Reply directly to <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:700;text-decoration:underline">${fromEmail}</a>.
-  </div>
-</div>`,
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="right" style="padding:20px 10px 22px"><span style="font-size:13px;color:#637168">Order total</span>&nbsp;&nbsp;<strong style="font-size:24px;line-height:30px;color:#123f2b">${formatPrice(subtotalCents / 100)}</strong></td></tr></table>
+  </td></tr>
+  <tr><td align="center" style="background:#123f2b;padding:22px 20px 24px">
+    <div style="font-size:16px;line-height:22px;font-weight:700;color:#ffffff;padding-bottom:13px">Ready for another good read?</div>
+    <a href="https://hotspotandco.com/books.html" style="display:inline-block;background:#f1cf78;border:1px solid #f1cf78;color:#123f2b;text-decoration:none;font-size:12px;line-height:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:14px 24px">EXPLORE THE BOOKSTORE</a>
+  </td></tr>
+  <tr><td align="center" style="padding:16px 20px;font-size:12px;line-height:18px;color:#647168;border-top:1px solid #e1e6de">Questions about your receipt? Reply directly to <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:700;text-decoration:underline">${fromEmail}</a>.</td></tr>
+</table>
+</td></tr></table>`,
       }),
     });
   } catch (error) {
