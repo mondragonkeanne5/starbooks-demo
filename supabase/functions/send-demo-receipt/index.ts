@@ -71,10 +71,9 @@ Deno.serve(async (request) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const publishableKey = Deno.env.get("SUPABASE_ANON_KEY") ?? request.headers.get("apikey") ?? "";
+  const publishableKey = request.headers.get("apikey") ?? "";
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const fromEmail = Deno.env.get("STARBOOKS_FROM_EMAIL");
-  const storefrontUrl = Deno.env.get("SITE_URL") ?? "https://hotspotandco.com";
   if (!supabaseUrl || !publishableKey || !resendApiKey || !fromEmail) {
     console.error("Email checkout configuration is incomplete.");
     return jsonResponse({ error: "Email checkout is not configured yet." }, request, 503);
@@ -100,64 +99,61 @@ Deno.serve(async (request) => {
   });
   const subtotalCents = items.reduce((total, item) => total + item.unit_price_cents * item.quantity, 0);
   const reference = `SB-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  const formatPrice = (amount: number) => new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    currencyDisplay: "narrowSymbol",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+
   const rows = items.map((item) =>
-    `<tr>
-      <td style="padding:16px;border-bottom:1px solid #e4e9e1;color:#243b30;font-size:14px;line-height:1.5">${escapeHtml(item.title)}<br><span style="color:#68776d;font-size:13px">by ${escapeHtml(item.author)}</span></td>
-      <td align="center" style="padding:16px;border-bottom:1px solid #e4e9e1;color:#243b30;font-size:14px">${item.quantity}</td>
-      <td align="right" style="padding:16px;border-bottom:1px solid #e4e9e1;color:#243b30;font-size:14px;font-weight:600">$${(item.unit_price_cents * item.quantity / 100).toFixed(2)}</td>
-    </tr>`
+    `<tr><td>${escapeHtml(item.title)} by ${escapeHtml(item.author)}</td><td>${item.quantity}</td><td>${formatPrice(item.unit_price_cents * item.quantity / 100)}</td></tr>`
   ).join("");
 
   let emailResponse: Response;
-  const safeStorefrontUrl = escapeHtml(storefrontUrl);
   try {
     emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: `Starbooks Bookhouse <${fromEmail}>`,
+        from: `Starbook <${fromEmail}>`,
         to: [email],
-        subject: `Starbooks receipt ${reference}`,
-        html: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f2f1eb" style="width:100%;background-color:#f2f1eb;font-family:Arial,Helvetica,sans-serif;color:#243b30">
-  <tr><td align="center" style="padding:28px 12px">
-    <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dce4da">
-      <tr><td align="center" bgcolor="#123f2b" style="background-color:#123f2b;padding:30px 20px 26px;color:#ffffff">
-        <p style="margin:0 0 9px;color:#e3c985;font-size:11px;line-height:1.3;font-weight:bold;text-transform:uppercase;letter-spacing:2px">A note from your bookseller</p>
-        <h1 style="margin:0;color:#ffffff;font-size:28px;line-height:1.25;font-weight:bold">Starbooks Bookhouse</h1>
-        <p style="margin:7px 0 0;color:#e8eee8;font-size:14px;line-height:1.4">Your order receipt</p>
-      </td></tr>
-      <tr><td style="padding:26px 28px 12px">
-        <p style="margin:0;color:#344a3d;font-size:15px;line-height:1.7">Thank you for your order. Keep this receipt reference for your records:</p>
-        <p style="margin:10px 0 0;color:#123f2b;font-size:16px;line-height:1.5;font-weight:bold">${reference}</p>
-      </td></tr>
-      <tr><td style="padding:12px 28px 4px">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse">
-          <tr bgcolor="#edf3e9" style="background-color:#edf3e9">
-            <th align="left" style="padding:12px 16px;color:#365342;font-size:11px;line-height:1.3;text-transform:uppercase;letter-spacing:1px">Book</th>
-            <th align="center" style="padding:12px 8px;color:#365342;font-size:11px;line-height:1.3;text-transform:uppercase;letter-spacing:1px">Qty</th>
-            <th align="right" style="padding:12px 16px;color:#365342;font-size:11px;line-height:1.3;text-transform:uppercase;letter-spacing:1px">Amount</th>
-          </tr>
-          ${rows}
-        </table>
-      </td></tr>
-      <tr><td align="right" style="padding:22px 44px 24px">
-        <span style="color:#586b5e;font-size:14px">Order total&nbsp;&nbsp;</span><strong style="color:#123f2b;font-size:26px;line-height:1.2">$${(subtotalCents / 100).toFixed(2)}</strong>
-      </td></tr>
-      <tr><td align="center" bgcolor="#123f2b" style="background-color:#123f2b;padding:25px 20px 28px">
-        <p style="margin:0 0 15px;color:#ffffff;font-size:16px;line-height:1.4;font-weight:bold">Ready for another good read?</p>
-        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
-          <tr><td align="center" bgcolor="#e3c985" style="background-color:#e3c985;border:1px solid #f0dda7;padding:15px 28px">
-            <a href="${safeStorefrontUrl}" style="display:block;color:#173b2b;text-decoration:none;font-size:13px;line-height:18px;font-weight:bold;letter-spacing:1px;text-transform:uppercase">Explore the bookshop</a>
-          </td></tr>
-        </table>
-      </td></tr>
-      <tr><td align="center" style="padding:20px 24px 22px;color:#66756b;font-size:12px;line-height:1.7">
-        Questions about your receipt? Reply to this email or contact<br>
-        <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:bold;text-decoration:underline">${fromEmail}</a>.
-      </td></tr>
+        subject: `Starbook receipt ${reference}`,
+        html: `<div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f3028;max-width:600px;margin:0 auto;border:1px solid #dfe6dc;background:#fcfdfa">
+  <div style="background:#123f2b;color:#ffffff;text-align:center;padding:24px 20px 20px">
+    <p style="margin:0 0 8px;font-size:10px;line-height:1;color:#d7e5d2;text-transform:uppercase;letter-spacing:1.8px">A note from your bookseller</p>
+    <h1 style="margin:0;font-size:28px;line-height:1.2;color:#ffffff">Starbooks Bookhouse</h1>
+    <p style="margin:8px 0 0;font-size:14px;color:#dfe9dc">Your order receipt</p>
+  </div>
+  <div style="padding:24px 28px 18px">
+    <p style="font-size:14px;line-height:1.6;margin:0 0 16px;color:#46564d">Thank you for your order. Keep this receipt reference for your records:</p>
+    <p style="margin:0 0 22px;color:#123f2b;font-size:16px;font-weight:700">${reference}</p>
+    <table style="width:100%;border-collapse:collapse" cellpadding="12">
+      <thead>
+        <tr style="background:#edf3e5">
+          <th align="left" style="font-size:11px;text-transform:uppercase;color:#123f2b;letter-spacing:.6px">Book</th>
+          <th align="center" style="width:64px;font-size:11px;text-transform:uppercase;color:#123f2b;letter-spacing:.6px">Qty</th>
+          <th align="right" style="width:90px;font-size:11px;text-transform:uppercase;color:#123f2b;letter-spacing:.6px">Amount</th>
+        </tr>
+      </thead>
+      <tbody style="font-size:13px">
+        ${rows.replaceAll('<tr>', '<tr style="border-bottom:1px solid #dde4d9">').replaceAll('<td>', '<td style="padding:16px 12px;color:#1f3028">')}
+      </tbody>
     </table>
-  </td></tr>
-</table>`,
+    <div style="text-align:right;padding:22px 12px 18px;border-top:1px solid #e0e5dc;margin-top:4px">
+      <span style="font-size:14px;color:#5a685f;margin-right:10px">Order total</span>
+      <strong style="font-size:23px;color:#123f2b">${formatPrice(subtotalCents / 100)}</strong>
+    </div>
+  </div>
+  <div style="background:#123f2b;text-align:center;padding:22px 20px 24px;color:#ffffff">
+    <p style="margin:0 0 14px;font-size:15px;font-weight:600">Ready for another good read?</p>
+    <a href="https://hotspotandco.com/books.html" style="display:inline-block;background:#f1cf78;color:#123f2b;text-decoration:none;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:15px 24px;border-radius:2px">Explore the bookstore</a>
+  </div>
+  <div style="text-align:center;padding:16px 20px;border-top:1px solid #e2e8df;font-size:12px;line-height:1.5;color:#5a685f">
+    Questions about your receipt? Reply directly to <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:700;text-decoration:underline">${fromEmail}</a>.
+  </div>
+</div>`,
       }),
     });
   } catch (error) {
