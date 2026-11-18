@@ -13,17 +13,44 @@ const checkoutForm = document.querySelector("#checkout-form");
 const checkoutMessage = document.querySelector("#checkout-message");
 const scrim = document.querySelector("#scrim");
 const backendConfig = window.STARBOOKS_CONFIG || {};
-const cart = new Map();
+const cartStorageKey = "starbooksCart";
+function loadCart() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(cartStorageKey) || "[]");
+    if (!Array.isArray(saved)) return new Map();
+    return new Map(saved.filter(([isbn, item]) => typeof isbn === "string"
+      && item && typeof item.title === "string" && typeof item.author === "string"
+      && Number.isFinite(item.price) && Number.isInteger(item.quantity) && item.quantity > 0));
+  } catch (error) {
+    console.warn("Could not restore the shopping bag for this session.", error);
+    return new Map();
+  }
+}
+const cart = loadCart();
 let activeCategory = "All";
 let toastTimer;
-let catalogLoaded = false;
+let catalogLoaded = cards.length > 0;
 let usingFallbackCatalog = false;
+function loadLastOrderSubtotalCents() {
+  try {
+    const stored = localStorage.getItem("starbookLastOrderSubtotalCents");
+    if (stored === null) return null;
+    const subtotalCents = Number(stored);
+    return Number.isSafeInteger(subtotalCents) && subtotalCents >= 0 ? subtotalCents : null;
+  } catch (error) {
+    console.warn("Could not load the last order subtotal from this browser.", error);
+    return null;
+  }
+}
+let lastOrderSubtotalCents = loadLastOrderSubtotalCents();
+
 const formatPrice = (amount) => new Intl.NumberFormat("en-PH", {
   style: "currency",
   currency: "PHP",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 }).format(amount);
+
 const fallbackBooks = [
   { isbn: "9780525559474", title: "The Midnight Library", author: "Matt Haig", price_cents: 112675, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780525559474-L.jpg", cover_tone: "blue", staff_pick: true },
   { isbn: "9780593321201", title: "Tomorrow, and Tomorrow, and Tomorrow", author: "Gabrielle Zevin", price_cents: 122064, category: "Fiction", genre_label: "Fiction", cover_url: "https://covers.openlibrary.org/b/isbn/9780593321201-L.jpg", cover_tone: "coral", staff_pick: true },
@@ -42,6 +69,7 @@ const fallbackBooks = [
 ];
 
 function showFallbackCatalog() {
+  if (!bookGrid) return;
   bookGrid.replaceChildren(...fallbackBooks.map(createBookCard));
   cards = [...bookGrid.querySelectorAll(".book-card")];
   catalogLoaded = true;
@@ -68,13 +96,6 @@ function createBookCard(book) {
   cover.alt = `Cover of ${book.title} by ${book.author}`;
   cover.loading = "lazy";
   art.append(cover);
-
-  if (book.staff_pick) {
-    const pickLabel = document.createElement("span");
-    pickLabel.className = "pick-label";
-    pickLabel.textContent = "STAFF PICK";
-    art.append(pickLabel);
-  }
 
   const addButton = document.createElement("button");
   addButton.className = "quick-add";
@@ -107,6 +128,7 @@ function createBookCard(book) {
 }
 
 async function loadBookCatalog() {
+  if (!bookGrid) return;
   if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
     showFallbackCatalog();
     bookGrid.setAttribute("aria-busy", "false");
@@ -136,7 +158,7 @@ async function loadBookCatalog() {
     applyFilters();
   } catch (error) {
     showFallbackCatalog();
-    console.warn("Could not load the database catalog.", error);
+    console.warn("Could not load the database catalog; keeping the saved catalog visible.", error);
   } finally {
     bookGrid.setAttribute("aria-busy", "false");
   }
@@ -145,12 +167,11 @@ async function loadBookCatalog() {
 void loadBookCatalog();
 
 function applyFilters() {
-  if (!catalogLoaded) return;
+  if (!bookGrid || !searchInput || !emptyState || !catalogLoaded) return;
   const query = searchInput.value.trim().toLowerCase();
   let visibleCount = 0;
   cards.forEach((card) => {
-    const matchesCategory = activeCategory === "All"
-      || (activeCategory === "Staff picks" ? card.dataset.pick === "true" : card.dataset.category === activeCategory);
+    const matchesCategory = activeCategory === "All" || card.dataset.category === activeCategory;
     const matchesSearch = `${card.dataset.title} ${card.dataset.author}`.toLowerCase().includes(query);
     const isVisible = matchesCategory && matchesSearch;
     card.hidden = !isVisible;
@@ -191,12 +212,20 @@ function changeQuantity(isbn, amount) {
 }
 
 function renderCart() {
+  try {
+    sessionStorage.setItem(cartStorageKey, JSON.stringify([...cart.entries()]));
+  } catch (error) {
+    console.warn("Could not save the shopping bag for this session.", error);
+  }
+  cartDrawer.classList.remove("order-complete");
   const totalItems = [...cart.values()].reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = [...cart.values()].reduce((sum, item) => sum + item.price * item.quantity, 0);
   bagCount.textContent = String(totalItems);
   document.querySelector("#open-cart").setAttribute("aria-label", `Open shopping bag, ${totalItems} items`);
   cartItemCount.textContent = `(${totalItems})`;
-  cartSubtotal.textContent = formatPrice(subtotal);
+  const isEmptyWithPreviousOrder = totalItems === 0 && lastOrderSubtotalCents !== null;
+  document.querySelector("#cart-subtotal-label").textContent = isEmptyWithPreviousOrder ? "Last order total" : "Subtotal";
+  cartSubtotal.textContent = formatPrice(isEmptyWithPreviousOrder ? lastOrderSubtotalCents / 100 : subtotal);
   checkoutButton.disabled = totalItems === 0;
   checkoutButton.hidden = false;
   if (totalItems === 0) {
@@ -215,6 +244,7 @@ function renderCart() {
 }
 
 function setCartOpen(isOpen) {
+  if (!isOpen && cartDrawer.classList.contains("order-complete")) renderCart();
   cartDrawer.classList.toggle("open", isOpen);
   cartDrawer.setAttribute("aria-hidden", String(!isOpen));
   cartDrawer.inert = !isOpen;
@@ -234,8 +264,8 @@ filters.forEach((filter) => filter.addEventListener("click", () => {
   applyFilters();
 }));
 
-searchInput.addEventListener("input", applyFilters);
-bookGrid.addEventListener("click", (event) => {
+searchInput?.addEventListener("input", applyFilters);
+bookGrid?.addEventListener("click", (event) => {
   const button = event.target.closest(".quick-add");
   if (button) addToBag(button.closest(".book-card"));
 });
@@ -268,6 +298,10 @@ checkoutForm.addEventListener("submit", async (event) => {
     website: formData.get("website"),
     items: [...cart.entries()].map(([isbn, item]) => ({ isbn, quantity: item.quantity })),
   };
+  const checkoutSubtotalCents = [...cart.values()].reduce(
+    (total, item) => total + Math.round(item.price * 100) * item.quantity,
+    0,
+  );
 
   const submitButton = checkoutForm.querySelector("button[type='submit']");
   submitButton.disabled = true;
@@ -283,6 +317,14 @@ checkoutForm.addEventListener("submit", async (event) => {
     if (!response.ok) throw new Error(result.error || "We could not send the receipt. Please try again.");
     const customerEmail = request.customer_email;
     const reference = result.reference || "CONFIRMED";
+    lastOrderSubtotalCents = Number.isSafeInteger(result.subtotal_cents) && result.subtotal_cents >= 0
+      ? result.subtotal_cents
+      : checkoutSubtotalCents;
+    try {
+      localStorage.setItem("starbookLastOrderSubtotalCents", String(lastOrderSubtotalCents));
+    } catch (error) {
+      console.warn("Could not persist the last order subtotal in this browser.", error);
+    }
     cart.clear();
     checkoutForm.reset();
     renderCart();
@@ -294,29 +336,33 @@ checkoutForm.addEventListener("submit", async (event) => {
       <div class="order-success-card">
         <div class="order-success-icon">✓</div>
         <h3>Receipt Sent!</h3>
-        <div class="order-success-ref">Order Reference: ${reference}</div>
-        <p class="order-success-desc">A detailed receipt has been sent to <strong>${customerEmail}</strong>.</p>
+        <p class="order-success-desc">A detailed receipt has been sent to <strong class="order-success-email"></strong>.</p>
+        <div class="order-success-total">
+          <span>Total on this receipt</span>
+          <strong>${formatPrice(lastOrderSubtotalCents / 100)}</strong>
+        </div>
+        <div class="order-success-ref"></div>
         <button class="order-success-btn" id="close-after-order" type="button">Back to Books</button>
       </div>
     `;
+    cartItems.querySelector(".order-success-email").textContent = customerEmail;
+    cartItems.querySelector(".order-success-ref").textContent = `Order Reference: ${reference}`;
+    cartDrawer.classList.add("order-complete");
 
     document.querySelector("#close-after-order")?.addEventListener("click", () => {
-      setCartOpen(false);
-      renderCart();
+      if (bookGrid) setCartOpen(false);
+      else window.location.href = "books.html#books";
     });
 
     showToast(`✓ Receipt sent to ${customerEmail}`);
   } catch (error) {
-    const isNetworkError = error instanceof TypeError || /failed to fetch|load failed|networkerror/i.test(error.message || "");
-    checkoutMessage.textContent = isNetworkError
-      ? "Messenger could not connect to checkout. Open hotspotandco.com in Safari or Chrome, then try again. Check your inbox first in case the receipt was sent."
-      : error.message || "Could not send the receipt. Please try again.";
+    checkoutMessage.textContent = error.message || "Could not send the receipt. Please try again.";
     checkoutButton.hidden = false;
   } finally {
     submitButton.disabled = false;
   }
 });
-document.querySelector("#menu-toggle").addEventListener("click", (event) => {
+document.querySelector("#menu-toggle")?.addEventListener("click", (event) => {
   const menu = document.querySelector("#mobile-menu");
   const isOpen = menu.classList.toggle("open");
   event.currentTarget.setAttribute("aria-expanded", String(isOpen));
@@ -328,3 +374,4 @@ document.querySelectorAll("#mobile-menu a").forEach((link) => link.addEventListe
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && cartDrawer.classList.contains("open")) setCartOpen(false);
 });
+renderCart();
