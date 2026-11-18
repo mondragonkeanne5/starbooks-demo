@@ -269,22 +269,22 @@ bookGrid?.addEventListener("click", (event) => {
   const button = event.target.closest(".quick-add");
   if (button) addToBag(button.closest(".book-card"));
 });
-document.querySelector("#open-cart").addEventListener("click", () => setCartOpen(true));
-document.querySelector("#close-cart").addEventListener("click", () => setCartOpen(false));
-scrim.addEventListener("click", () => setCartOpen(false));
-cartItems.addEventListener("click", (event) => {
+document.querySelector("#open-cart")?.addEventListener("click", () => setCartOpen(true));
+document.querySelector("#close-cart")?.addEventListener("click", () => setCartOpen(false));
+scrim?.addEventListener("click", () => setCartOpen(false));
+cartItems?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
   changeQuantity(button.dataset.isbn, button.dataset.action === "increase" ? 1 : -1);
 });
-checkoutButton.addEventListener("click", () => {
+checkoutButton?.addEventListener("click", () => {
   if (cart.size === 0) return;
   checkoutMessage.textContent = "";
   checkoutForm.hidden = false;
   checkoutButton.hidden = true;
-  checkoutForm.querySelector("input[name='customer_email']").focus();
+  checkoutForm.querySelector("input[name='customer_email']")?.focus();
 });
-checkoutForm.addEventListener("submit", async (event) => {
+checkoutForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (cart.size === 0) return;
   if (!backendConfig.supabaseUrl || !backendConfig.supabaseAnonKey) {
