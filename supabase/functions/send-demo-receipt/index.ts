@@ -142,7 +142,17 @@ Deno.serve(async (request) => {
   </td></tr>
   <tr><td align="center" style="background:#123f2b;padding:22px 20px 24px">
     <div style="font-size:16px;line-height:22px;font-weight:700;color:#ffffff;padding-bottom:13px">Ready for another good read?</div>
-    <a href="https://hotspotandco.com/books.html" style="display:inline-block;background:#f1cf78;border:1px solid #f1cf78;color:#123f2b;text-decoration:none;font-size:12px;line-height:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:14px 24px">EXPLORE THE BOOKSTORE</a>
+    <!--[if mso]>
+    <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0"><tr><td>
+      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://hotspotandco.com/books.html" style="height:46px;v-text-anchor:middle;width:190px" arcsize="8%" strokecolor="#f1cf78" fillcolor="#f1cf78">
+        <w:anchorlock/>
+        <center style="color:#123f2b;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px">EXPLORE THE BOOKSTORE</center>
+      </v:roundrect>
+    </td></tr></table>
+    <![endif]-->
+    <!--[if !mso]><!-->
+    <a href="https://hotspotandco.com/books.html" style="display:inline-block;background:#f1cf78;border:1px solid #f1cf78;border-radius:2px;color:#123f2b;text-decoration:none;font-family:Arial,sans-serif;font-size:12px;line-height:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:14px 24px">EXPLORE THE BOOKSTORE</a>
+    <!--<![endif]-->
   </td></tr>
   <tr><td align="center" style="padding:16px 20px;font-size:12px;line-height:18px;color:#647168;border-top:1px solid #e1e6de">Questions about your receipt? Reply directly to <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:700;text-decoration:underline">${fromEmail}</a>.</td></tr>
 </table>
