@@ -253,13 +253,20 @@ if (!config.supabaseUrl || !config.supabaseAnonKey || !window.supabase?.createCl
   });
 }
 
-document.querySelector("#new-product").addEventListener("click", () => {
-  resetProductForm();
-  productForm.elements.title.focus();
-});
+const newProductButton = document.querySelector("#new-product");
+if (newProductButton) {
+  newProductButton.addEventListener("click", () => {
+    resetProductForm();
+    productForm.elements.title.focus();
+  });
+}
 
-productForm.elements.cover_file.addEventListener("change", updateCoverFileName);
-document.querySelector("#reset-product").addEventListener("click", resetProductForm);
+const resetProductButton = document.querySelector("#reset-product");
+if (resetProductButton) resetProductButton.addEventListener("click", resetProductForm);
+
+const coverFileInput = productForm.elements.cover_file;
+if (coverFileInput) coverFileInput.addEventListener("change", updateCoverFileName);
+
 catalogSearch.addEventListener("input", renderProducts);
 filterButtons.forEach((button) => button.addEventListener("click", () => {
   currentFilter = button.dataset.filter;
@@ -592,10 +599,3 @@ document.querySelector("#apply-report-filter").addEventListener("click", () => {
   loadReports();
 });
 document.querySelector("#export-report").addEventListener("click", exportReportCsv);
-
-productForm.elements.cover_file.addEventListener("change", updateCoverFileName);
-document.querySelector("#reset-product").addEventListener("click", resetProductForm);
-document.querySelector("#new-product").addEventListener("click", () => {
-  resetProductForm();
-  productForm.elements.title.focus();
-});
