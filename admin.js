@@ -593,6 +593,8 @@ document.querySelector("#apply-report-filter").addEventListener("click", () => {
 });
 document.querySelector("#export-report").addEventListener("click", exportReportCsv);
 
+productForm.elements.cover_file.addEventListener("change", updateCoverFileName);
+document.querySelector("#reset-product").addEventListener("click", resetProductForm);
 document.querySelector("#new-product").addEventListener("click", () => {
   resetProductForm();
   productForm.elements.title.focus();
