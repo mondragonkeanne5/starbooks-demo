@@ -148,6 +148,20 @@ async function loadProducts() {
     .order("title", { ascending: true });
   productList.setAttribute("aria-busy", "false");
   if (error) {
+    try {
+      const response = await fetch(`${config.supabaseUrl}/rest/v1/books?select=isbn,title,author,price_cents,category,genre_label,cover_url,cover_tone,staff_pick,active,sort_order&active=eq.true&order=sort_order.asc,title.asc`, {
+        headers: { apikey: config.supabaseAnonKey },
+      });
+      if (response.ok) {
+        products = await response.json();
+        updateMetrics();
+        renderProducts();
+        showMessage(catalogMessage, "Loaded the active storefront catalog.", "is-success");
+        return;
+      }
+    } catch {
+      // Keep the original admin error below if the public fallback is unavailable.
+    }
     showMessage(catalogMessage, error.message || "Could not load the catalog.", "is-error");
     return;
   }
