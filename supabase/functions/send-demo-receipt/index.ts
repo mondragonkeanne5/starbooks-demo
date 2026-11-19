@@ -95,13 +95,14 @@ Deno.serve(async (request) => {
   const booksByIsbn = new Map(books.map((book) => [book.isbn, book]));
   const items = [...quantities.entries()].map(([isbn, quantity]) => {
     const book = booksByIsbn.get(isbn)!;
-    return { title: book.title, author: book.author, quantity, unit_price_cents: book.price_cents };
+    return { isbn, title: book.title, author: book.author, quantity, unit_price_cents: book.price_cents };
   });
   const subtotalCents = items.reduce((total, item) => total + item.unit_price_cents * item.quantity, 0);
   const reference = `SB-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   const formatPrice = (amount: number) => new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
+    currencyDisplay: "narrowSymbol",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -118,33 +119,44 @@ Deno.serve(async (request) => {
       body: JSON.stringify({
         from: `Starbook <${fromEmail}>`,
         to: [email],
-        subject: `Starbook receipt ${reference}`,
-        html: `<div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f3028;max-width:600px;margin:0 auto;padding:28px 24px;border:1px solid #e2e8df;border-radius:12px;background:#fcfdfa">
-  <div style="border-bottom:2px solid #123f2b;padding-bottom:18px;margin-bottom:20px;text-align:center">
-    <h1 style="color:#123f2b;margin:0 0 4px;font-size:26px;letter-spacing:-0.5px">Starbook</h1>
-    <p style="color:#57685c;margin:0;font-size:14px;font-weight:500">Official Order Receipt</p>
-  </div>
-  <p style="font-size:15px;line-height:1.5;margin:0 0 16px">Thank you for your order! Your receipt reference number is <strong style="color:#123f2b;font-size:16px;background:#edf5e8;padding:2px 8px;border-radius:4px">${reference}</strong>.</p>
-  <table style="width:100%;border-collapse:collapse;margin:20px 0" cellpadding="10">
-    <thead>
-      <tr style="background:#edf3e5;border-bottom:2px solid #d5e4cc">
-        <th align="left" style="font-size:12px;text-transform:uppercase;color:#123f2b;letter-spacing:0.5px">Book</th>
-        <th align="center" style="font-size:12px;text-transform:uppercase;color:#123f2b;letter-spacing:0.5px">Qty</th>
-        <th align="right" style="font-size:12px;text-transform:uppercase;color:#123f2b;letter-spacing:0.5px">Total</th>
+        subject: `Starbooks receipt ${reference}`,
+        html: `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#edf1ec;margin:0;padding:24px 0"><tr><td align="center">
+<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:600px;max-width:600px;font-family:Arial,Helvetica,sans-serif;color:#26352d;background:#ffffff;border:1px solid #d9e1d6">
+  <tr><td align="center" style="background:#123f2b;padding:22px 24px 18px;border-bottom:4px solid #d8c58a">
+    <div style="font-size:10px;line-height:14px;text-transform:uppercase;letter-spacing:2px;color:#dce8d8">A note from your bookseller</div>
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:38px;font-weight:700;color:#ffffff;padding-top:4px">Starbooks Bookhouse</div>
+    <div style="font-size:13px;line-height:18px;color:#dce8d8;padding-top:3px">Your order receipt</div>
+  </td></tr>
+  <tr><td style="padding:26px 30px 8px">
+    <div style="font-size:14px;line-height:22px;color:#56655d;padding-bottom:10px">Thank you for your order. Keep this receipt reference for your records:</div>
+    <div style="font-size:17px;line-height:24px;font-weight:700;color:#123f2b;padding-bottom:22px">${reference}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse">
+      <tr style="background:#edf3e5">
+        <td align="left" style="padding:12px 10px;font-size:11px;line-height:14px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#123f2b">Book</td>
+        <td align="center" width="52" style="padding:12px 8px;font-size:11px;line-height:14px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#123f2b">Qty</td>
+        <td align="right" width="112" style="padding:12px 10px;font-size:11px;line-height:14px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#123f2b">Amount</td>
       </tr>
-    </thead>
-    <tbody style="font-size:14px">
-      ${rows}
-    </tbody>
-  </table>
-  <div style="text-align:right;padding-top:14px;border-top:1px solid #e0e5dc;margin-bottom:24px">
-    <span style="font-size:15px;color:#5a685f;margin-right:12px">Total Amount:</span>
-    <strong style="font-size:22px;color:#123f2b">${formatPrice(subtotalCents / 100)}</strong>
-  </div>
-  <div style="background:#f1f6ed;border:1px solid #d9e6d3;padding:14px;border-radius:8px;font-size:13px;color:#3f5446;text-align:center;line-height:1.4">
-    If you have any questions about this receipt, reply directly to this email at <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:600;text-decoration:underline">${fromEmail}</a>.
-  </div>
-</div>`,
+      ${items.map((item) => `<tr><td style="padding:15px 10px;border-bottom:1px solid #dde4d9;font-size:14px;line-height:20px;color:#26352d"><strong style="font-weight:700">${escapeHtml(item.title)}</strong><div style="font-size:12px;line-height:18px;color:#6c766f">by ${escapeHtml(item.author)}</div></td><td align="center" style="padding:15px 8px;border-bottom:1px solid #dde4d9;font-size:14px;color:#26352d">${item.quantity}</td><td align="right" style="padding:15px 10px;border-bottom:1px solid #dde4d9;font-size:14px;font-weight:700;color:#26352d">${formatPrice(item.unit_price_cents * item.quantity / 100)}</td></tr>`).join("")}
+    </table>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="right" style="padding:20px 10px 22px"><span style="font-size:13px;color:#637168">Order total</span>&nbsp;&nbsp;<strong style="font-size:24px;line-height:30px;color:#123f2b">${formatPrice(subtotalCents / 100)}</strong></td></tr></table>
+  </td></tr>
+  <tr><td align="center" style="background:#123f2b;padding:22px 20px 24px">
+    <div style="font-size:16px;line-height:22px;font-weight:700;color:#ffffff;padding-bottom:13px">Ready for another good read?</div>
+    <!--[if mso]>
+    <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0"><tr><td>
+      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://hotspotandco.com/books.html" style="height:46px;v-text-anchor:middle;width:190px" arcsize="8%" strokecolor="#f1cf78" fillcolor="#f1cf78">
+        <w:anchorlock/>
+        <center style="color:#123f2b;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px">EXPLORE THE BOOKSTORE</center>
+      </v:roundrect>
+    </td></tr></table>
+    <![endif]-->
+    <!--[if !mso]><!-->
+    <a href="https://hotspotandco.com/books.html" style="display:inline-block;background:#f1cf78;border:1px solid #f1cf78;border-radius:2px;color:#123f2b;text-decoration:none;font-family:Arial,sans-serif;font-size:12px;line-height:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:14px 24px">EXPLORE THE BOOKSTORE</a>
+    <!--<![endif]-->
+  </td></tr>
+  <tr><td align="center" style="padding:16px 20px;font-size:12px;line-height:18px;color:#647168;border-top:1px solid #e1e6de">Questions about your receipt? Reply directly to <a href="mailto:${fromEmail}" style="color:#123f2b;font-weight:700;text-decoration:underline">${fromEmail}</a>.</td></tr>
+</table>
+</td></tr></table>`,
       }),
     });
   } catch (error) {
@@ -157,5 +169,35 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The receipt email could not be sent. Please try again." }, request, 502);
   }
 
-  return jsonResponse({ sent: true, reference }, request, 200);
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (serviceRoleKey) {
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: order, error: orderError } = await adminSupabase
+      .from("orders")
+      .insert({ reference, customer_email: email, subtotal_cents: subtotalCents, status: "receipt_sent" })
+      .select("id")
+      .single();
+
+    if (orderError || !order) {
+      console.error("Could not persist receipt order:", orderError?.message);
+    } else {
+      const { error: itemsError } = await adminSupabase
+        .from("order_items")
+        .insert(items.map((item) => ({
+          order_id: order.id,
+          isbn: item.isbn,
+          title_snapshot: item.title,
+          author_snapshot: item.author,
+          quantity: item.quantity,
+          unit_price_cents: item.unit_price_cents,
+        })));
+      if (itemsError) console.error("Could not persist receipt items:", itemsError.message);
+    }
+  } else {
+    console.warn("SUPABASE_SERVICE_ROLE_KEY is not configured; receipt will not appear in reports.");
+  }
+
+  return jsonResponse({ sent: true, reference, subtotal_cents: subtotalCents }, request, 200);
 });
