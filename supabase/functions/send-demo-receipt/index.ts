@@ -174,7 +174,9 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The receipt email could not be sent. Please try again." }, request, 502);
   }
 
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  let persistenceStatus = "skipped";
+  let persistenceCode = "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
   if (serviceRoleKey) {
     const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -186,8 +188,11 @@ Deno.serve(async (request) => {
       .single();
 
     if (orderError || !order) {
+      persistenceStatus = "failed";
+      persistenceCode = orderError?.code ?? "unknown_order_error";
       console.error("Could not persist receipt order:", orderError?.message);
     } else {
+      persistenceStatus = "saved";
       const { error: itemsError } = await adminSupabase
         .from("order_items")
         .insert(items.map((item) => ({
@@ -198,11 +203,16 @@ Deno.serve(async (request) => {
           quantity: item.quantity,
           unit_price_cents: item.unit_price_cents,
         })));
-      if (itemsError) console.error("Could not persist receipt items:", itemsError.message);
+      if (itemsError) {
+        persistenceStatus = "order_saved_items_failed";
+        persistenceCode = itemsError.code ?? "unknown_items_error";
+        console.error("Could not persist receipt items:", itemsError.message);
+      }
     }
   } else {
+    persistenceStatus = "missing_service_key";
     console.warn("SUPABASE_SERVICE_ROLE_KEY is not configured; receipt will not appear in reports.");
   }
 
-  return jsonResponse({ sent: true, reference, subtotal_cents: subtotalCents }, request, 200);
+  return jsonResponse({ sent: true, reference, subtotal_cents: subtotalCents, persistence_status: persistenceStatus, persistence_code: persistenceCode }, request, 200);
 });

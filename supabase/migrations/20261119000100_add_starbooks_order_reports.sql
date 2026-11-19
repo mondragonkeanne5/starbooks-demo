@@ -29,6 +29,8 @@ revoke all on public.order_items from anon, authenticated;
 
 grant select on public.orders to authenticated;
 grant select on public.order_items to authenticated;
+grant all on table public.orders to service_role;
+grant all on table public.order_items to service_role;
 
 drop policy if exists "Admins can read orders" on public.orders;
 create policy "Admins can read orders"
