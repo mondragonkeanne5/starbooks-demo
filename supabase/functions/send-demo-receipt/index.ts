@@ -1,8 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const allowedOrigins = (Deno.env.get("SITE_ORIGINS") ?? "https://hotspotandco.com,https://www.hotspotandco.com,https://mondragonkeanne5.github.io")
-  .split(",")
-  .map((origin) => origin.trim());
+const allowedOrigins = Array.from(new Set([
+  ...((Deno.env.get("SITE_ORIGINS") ?? "https://hotspotandco.com,https://www.hotspotandco.com,https://mondragonkeanne5.github.io")
+    .split(",").map((origin) => origin.trim()).filter(Boolean)),
+  "http://hotspotandco.com",
+  "http://www.hotspotandco.com",
+  "https://hotspotandco.com",
+  "https://www.hotspotandco.com",
+]));
 
 function corsHeaders(request: Request) {
   const requestOrigin = request.headers.get("Origin") ?? "";
