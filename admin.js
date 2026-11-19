@@ -16,6 +16,7 @@ const filterButtons = [...document.querySelectorAll(".filter-button")];
 let client = null;
 let products = [];
 let currentFilter = "all";
+let reportRows = [];
 
 function showMessage(element, message, kind = "") {
   element.textContent = message;
@@ -380,4 +381,219 @@ productForm.addEventListener("submit", async (event) => {
   resetProductForm();
   showMessage(catalogMessage, originalIsbn ? "Book updated." : "Book added to the catalog.", "is-success");
   await loadProducts();
+});
+
+function todayIso() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function thisMonthRange() {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  const offset = from.getTimezoneOffset() * 60000;
+  return { from: new Date(from.getTime() - offset).toISOString().slice(0, 10), to: todayIso() };
+}
+
+function isoAtStartOfDay(date) { return `${date}T00:00:00.000Z`; }
+function isoAtEndOfDay(date) { return `${date}T23:59:59.999Z`; }
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+async function loadReports() {
+  if (!client) return;
+  const from = document.querySelector("#report-from").value;
+  const to = document.querySelector("#report-to").value;
+  showMessage(document.querySelector("#report-message"), "Loading reports...");
+
+  let query = client
+    .from("orders")
+    .select("id,reference,customer_email,subtotal_cents,created_at,order_items(isbn,title_snapshot,author_snapshot,quantity,unit_price_cents)")
+    .order("created_at", { ascending: false });
+  if (from) query = query.gte("created_at", isoAtStartOfDay(from));
+  if (to) query = query.lte("created_at", isoAtEndOfDay(to));
+
+  const { data, error } = await query;
+  if (error) {
+    showMessage(document.querySelector("#report-message"), error.message || "Could not load reports.", "is-error");
+    reportRows = [];
+  } else {
+    reportRows = data || [];
+    showMessage(document.querySelector("#report-message"), reportRows.length ? `${reportRows.length} matching ${reportRows.length === 1 ? "order" : "orders"}.` : "No orders in this range.");
+  }
+  renderReports();
+}
+
+function renderReports() {
+  const list = document.querySelector("#report-order-list");
+  let revenueCents = 0;
+  const bookCounts = new Map();
+
+  const rows = reportRows.map((order) => {
+    revenueCents += order.subtotal_cents || 0;
+    const items = order.order_items || [];
+
+    const details = document.createElement("div");
+    details.className = "order-details";
+    details.hidden = true;
+    for (const item of items) {
+      const bookCountsKey = item.title_snapshot || item.isbn;
+      bookCounts.set(bookCountsKey, (bookCounts.get(bookCountsKey) || 0) + item.quantity);
+      const detail = document.createElement("div");
+      detail.className = "order-book-row";
+      const title = document.createElement("span");
+      title.textContent = `${item.quantity}× ${item.title_snapshot}`;
+      const amount = document.createElement("strong");
+      amount.textContent = priceLabel(item.unit_price_cents * item.quantity);
+      detail.append(title, amount);
+      details.append(detail);
+    }
+
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "order-row";
+    row.setAttribute("aria-expanded", "false");
+
+    const left = document.createElement("span");
+    left.className = "order-reference";
+    const reference = document.createElement("strong");
+    reference.textContent = order.reference;
+    const date = document.createElement("small");
+    date.textContent = new Date(order.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" });
+    left.append(reference, date);
+
+    const right = document.createElement("span");
+    right.className = "order-row-total";
+    right.innerHTML = `<strong>${priceLabel(order.subtotal_cents)}</strong><span aria-hidden="true">›</span>`;
+    row.append(left, right);
+
+    const wrapper = document.createElement("article");
+    wrapper.className = "order-item";
+    row.addEventListener("click", () => {
+      const open = row.getAttribute("aria-expanded") === "true";
+      row.setAttribute("aria-expanded", String(!open));
+      details.hidden = open;
+      row.classList.toggle("is-open", !open);
+    });
+    wrapper.append(row, details);
+    return wrapper;
+  });
+
+  list.replaceChildren(...rows);
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "list-empty order-empty";
+    empty.textContent = "No orders in this range";
+    list.append(empty);
+  }
+
+  let topBook = "—";
+  let topCount = 0;
+  for (const [title, count] of bookCounts) {
+    if (count > topCount) { topBook = title; topCount = count; }
+  }
+
+  const orderCount = reportRows.length;
+  const averageCents = orderCount ? Math.round(revenueCents / orderCount) : 0;
+  document.querySelector("#report-orders").textContent = String(orderCount);
+  document.querySelector("#report-revenue").textContent = priceLabel(revenueCents);
+  document.querySelector("#report-average").textContent = priceLabel(averageCents);
+  document.querySelector("#report-top-book").textContent = topBook;
+  document.querySelector("#report-top-count").textContent = topCount ? `${topCount} ${topCount === 1 ? "copy" : "copies"}` : "No sales";
+  document.querySelector("#report-order-count").textContent = `${orderCount} ${orderCount === 1 ? "order" : "orders"}`;
+  document.querySelector("#report-range-total").textContent = priceLabel(revenueCents);
+}
+
+function exportReportCsv() {
+  const from = document.querySelector("#report-from").value;
+  const to = document.querySelector("#report-to").value;
+  const heading = ["Date", "Reference", "Customer", "ISBN", "Title", "Author", "Quantity", "Unit Price (PHP)", "Line Total (PHP)", "Order Total (PHP)"];
+  const lines = [heading.map(csvCell).join(",")];
+
+  for (const order of reportRows) {
+    const items = order.order_items?.length ? order.order_items : [{ isbn: "", title_snapshot: "", author_snapshot: "", quantity: 0, unit_price_cents: 0 }];
+    for (const item of items) {
+      lines.push([
+        new Date(order.created_at).toISOString(), order.reference, order.customer_email, item.isbn,
+        item.title_snapshot, item.author_snapshot, item.quantity,
+        `₱${(item.unit_price_cents / 100).toFixed(2)}`,
+        `₱${((item.unit_price_cents * item.quantity) / 100).toFixed(2)}`,
+        `₱${(order.subtotal_cents / 100).toFixed(2)}`,
+      ].map(csvCell).join(","));
+    }
+  }
+
+  const blob = new Blob(["\uFEFF", lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `starbooks-report_${from || "start"}_${to || todayIso()}.csv`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+const reportFrom = document.querySelector("#report-from");
+const reportTo = document.querySelector("#report-to");
+const monthRange = thisMonthRange();
+if (!reportFrom.value) reportFrom.value = monthRange.from;
+if (!reportTo.value) reportTo.value = monthRange.to;
+
+function setQuickRange(range) {
+  const to = todayIso();
+  let from = to;
+  if (range === "7days") {
+    const date = new Date();
+    date.setDate(date.getDate() - 6);
+    const offset = date.getTimezoneOffset() * 60000;
+    from = new Date(date.getTime() - offset).toISOString().slice(0, 10);
+  } else if (range === "month") {
+    from = thisMonthRange().from;
+  }
+  reportFrom.value = from;
+  reportTo.value = to;
+  document.querySelectorAll("[data-range]").forEach((button) => {
+    const active = button.dataset.range === range;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  loadReports();
+}
+
+document.querySelectorAll("[data-range]").forEach((button) => {
+  button.addEventListener("click", () => setQuickRange(button.dataset.range));
+});
+
+const viewButtons = [...document.querySelectorAll(".view-button")];
+viewButtons.forEach((button) => button.addEventListener("click", () => {
+  const isReports = button.dataset.view === "reports";
+  viewButtons.forEach((viewButton) => {
+    const isCurrent = viewButton === button;
+    viewButton.classList.toggle("active", isCurrent);
+    viewButton.setAttribute("aria-pressed", String(isCurrent));
+  });
+  document.querySelector("#catalog-view").hidden = isReports;
+  document.querySelector("#reports-view").hidden = !isReports;
+  document.querySelector("#new-product").hidden = isReports;
+  document.querySelector("#admin-title").innerHTML = isReports ? "Sales <em>reports</em>" : "Catalog <em>management</em>";
+  if (isReports) loadReports();
+}));
+
+document.querySelector("#apply-report-filter").addEventListener("click", () => {
+  if (reportFrom.value && reportTo.value && reportFrom.value > reportTo.value) {
+    showMessage(document.querySelector("#report-message"), "The start date must be before or equal to the end date.", "is-error");
+    return;
+  }
+  loadReports();
+});
+document.querySelector("#export-report").addEventListener("click", exportReportCsv);
+
+document.querySelector("#new-product").addEventListener("click", () => {
+  resetProductForm();
+  productForm.elements.title.focus();
 });

@@ -95,7 +95,7 @@ Deno.serve(async (request) => {
   const booksByIsbn = new Map(books.map((book) => [book.isbn, book]));
   const items = [...quantities.entries()].map(([isbn, quantity]) => {
     const book = booksByIsbn.get(isbn)!;
-    return { title: book.title, author: book.author, quantity, unit_price_cents: book.price_cents };
+    return { isbn, title: book.title, author: book.author, quantity, unit_price_cents: book.price_cents };
   });
   const subtotalCents = items.reduce((total, item) => total + item.unit_price_cents * item.quantity, 0);
   const reference = `SB-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
@@ -169,5 +169,35 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "The receipt email could not be sent. Please try again." }, request, 502);
   }
 
-  return jsonResponse({ sent: true, reference }, request, 200);
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (serviceRoleKey) {
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: order, error: orderError } = await adminSupabase
+      .from("orders")
+      .insert({ reference, customer_email: email, subtotal_cents: subtotalCents, status: "receipt_sent" })
+      .select("id")
+      .single();
+
+    if (orderError || !order) {
+      console.error("Could not persist receipt order:", orderError?.message);
+    } else {
+      const { error: itemsError } = await adminSupabase
+        .from("order_items")
+        .insert(items.map((item) => ({
+          order_id: order.id,
+          isbn: item.isbn,
+          title_snapshot: item.title,
+          author_snapshot: item.author,
+          quantity: item.quantity,
+          unit_price_cents: item.unit_price_cents,
+        })));
+      if (itemsError) console.error("Could not persist receipt items:", itemsError.message);
+    }
+  } else {
+    console.warn("SUPABASE_SERVICE_ROLE_KEY is not configured; receipt will not appear in reports.");
+  }
+
+  return jsonResponse({ sent: true, reference, subtotal_cents: subtotalCents }, request, 200);
 });
